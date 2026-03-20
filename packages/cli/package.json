@@ -1,0 +1,15 @@
+{
+  "name": "@mlnpm/cli",
+  "version": "1.0.0",
+  "private": true,
+  "description": "",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bin": {
+    "mlnpm": "./dist/index.js"
+  }
+
+}

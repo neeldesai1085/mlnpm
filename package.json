@@ -1,0 +1,29 @@
+{
+  "name": "mlnpm",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "scripts": {
+    "dev:api": "npm run dev -w @mlnpm/registry-api",
+    "dev:web": "npm run dev -w @mlnpm/web",
+    "migrate": "npm run migrate -w @mlnpm/registry-api",
+    "build:api": "npm run build -w @mlnpm/registry-api"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/neeldesai1085/mlnpm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/neeldesai1085/mlnpm/issues"
+  },
+  "homepage": "https://github.com/neeldesai1085/mlnpm#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
