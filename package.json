@@ -4,10 +4,10 @@
   "description": "",
   "private": true,
   "scripts": {
-    "dev:api": "npm run dev -w @mlnpm/registry-api",
-    "dev:web": "npm run dev -w @mlnpm/web",
-    "migrate": "npm run migrate -w @mlnpm/registry-api",
-    "build:api": "npm run build -w @mlnpm/registry-api"
+    "dev:api": "npm run dev -w @mlnpm/backend",
+    "dev:web": "npm run dev -w @mlnpm/frontend",
+    "migrate": "npm run migrate -w @mlnpm/backend",
+    "build:api": "npm run build -w @mlnpm/backend"
   },
   "workspaces": [
     "packages/*"
