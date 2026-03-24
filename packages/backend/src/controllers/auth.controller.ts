@@ -8,7 +8,7 @@ import { env } from "../config/env.js";
 const registerSchema = z.object({
     username: z.string().min(3).max(64).regex(/^[a-z0-9_-]+$/,
         "Username: only a-z, 0-9, _ and -"),
-    email: z.string().email(),
+    email: z.email(),
     password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
