@@ -60,25 +60,33 @@ export async function register(req: Request, res: Response) {
 
 export async function login(req: Request, res: Response) {
     const parsed = loginSchema.safeParse(req.body);
+
     if (!parsed.success) {
         res.status(400).json({ error: z.flattenError(parsed.error).fieldErrors });
         return;
     }
+
     const { username, password } = parsed.data;
+    
     const { rows } = await query<{ id: string; username: string; password_hash: string }>(
         "SELECT id, username, password_hash FROM users WHERE username = $1",
         [username]
     );
+    
     if (rows.length === 0) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
     }
+    
     const user = rows[0]!;
+    
     const valid = await bcrypt.compare(password, user.password_hash);
+    
     if (!valid) {
         res.status(401).json({ error: "Invalid credentials" });
         return;
     }
+    
     res.json({
         message: "Login successful",
         token: signToken({ id: user.id, username: user.username }),
