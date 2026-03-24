@@ -1,5 +1,5 @@
 {
-  "name": "@mlnpm/registry-api",
+  "name": "@mlnpm/backend",
   "version": "1.0.0",
   "description": "",
   "main": "./dist/index.js",
