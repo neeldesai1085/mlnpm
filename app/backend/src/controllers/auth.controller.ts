@@ -94,12 +94,11 @@ export async function register(req: Request, res: Response) {
         [email, username, passwordHash, otpHash, expiresAt],
     );
 
-    try {
-        await sendOtpEmail(email, otp);
-    } catch {
-        res.status(500).json({ error: "Failed to send OTP email" });
-        return;
-    }
+    setTimeout(() => {
+        void sendOtpEmail(email, otp).catch((err) => {
+            console.error("Failed to send OTP email:", err);
+        });
+    }, 0);
 
     res.status(200).json({
         message: "OTP sent to email",
@@ -227,12 +226,11 @@ export async function resendOtp(req: Request, res: Response) {
         [otpHash, expiresAt, email],
     );
 
-    try {
-        await sendOtpEmail(email, otp);
-    } catch {
-        res.status(500).json({ error: "Failed to send OTP email" });
-        return;
-    }
+    setTimeout(() => {
+        void sendOtpEmail(email, otp).catch((err) => {
+            console.error("Failed to resend OTP email:", err);
+        });
+    }, 0);
 
     res.status(200).json({ message: "OTP resent" });
 }
