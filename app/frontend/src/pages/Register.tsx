@@ -133,8 +133,12 @@ function Register({ onLogin }: { onLogin: () => void }) {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                    <div className={otpSent ? "opacity-70" : ""}>
+                        <label
+                            className={`block text-sm font-medium mb-1.5 ${
+                                otpSent ? "text-slate-500" : "text-slate-400"
+                            }`}
+                        >
                             Username
                         </label>
                         <input
@@ -142,13 +146,21 @@ function Register({ onLogin }: { onLogin: () => void }) {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             disabled={otpSent}
-                            className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                            className={`w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white transition-colors ${
+                                otpSent
+                                    ? "text-slate-500 placeholder:text-slate-600 border-slate-800"
+                                    : "focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            }`}
                             placeholder="e.g. johndoe"
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                    <div className={otpSent ? "opacity-70" : ""}>
+                        <label
+                            className={`block text-sm font-medium mb-1.5 ${
+                                otpSent ? "text-slate-500" : "text-slate-400"
+                            }`}
+                        >
                             Email
                         </label>
                         <input
@@ -156,13 +168,21 @@ function Register({ onLogin }: { onLogin: () => void }) {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             disabled={otpSent}
-                            className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                            className={`w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white transition-colors ${
+                                otpSent
+                                    ? "text-slate-500 placeholder:text-slate-600 border-slate-800"
+                                    : "focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            }`}
                             placeholder="you@example.com"
                             required
                         />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-400 mb-1.5">
+                    <div className={otpSent ? "opacity-70" : ""}>
+                        <label
+                            className={`block text-sm font-medium mb-1.5 ${
+                                otpSent ? "text-slate-500" : "text-slate-400"
+                            }`}
+                        >
                             Password
                         </label>
                         <input
@@ -170,16 +190,30 @@ function Register({ onLogin }: { onLogin: () => void }) {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={otpSent}
-                            className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
+                            className={`w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white transition-colors ${
+                                otpSent
+                                    ? "text-slate-500 placeholder:text-slate-600 border-slate-800"
+                                    : "focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            }`}
                             placeholder="Min 8 characters"
                             required
                         />
 
-                        <div className="mt-3 space-y-1.5 text-xs font-medium">
+                        <div
+                            className={`mt-3 space-y-1.5 text-xs font-medium ${
+                                otpSent ? "text-slate-500" : ""
+                            }`}
+                        >
                             {pwdRules.map((rule, idx) => (
                                 <div
                                     key={idx}
-                                    className={`flex items-center gap-2 transition-colors duration-300 ${rule.valid ? "text-green-500" : "text-red-500"}`}
+                                    className={`flex items-center gap-2 transition-colors duration-300 ${
+                                        otpSent
+                                            ? "text-slate-500"
+                                            : rule.valid
+                                              ? "text-green-500"
+                                              : "text-red-500"
+                                    }`}
                                 >
                                     {rule.valid ? (
                                         <svg
