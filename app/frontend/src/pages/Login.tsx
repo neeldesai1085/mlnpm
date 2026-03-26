@@ -23,7 +23,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             setError((err as Error).message);
         }
     };
-    
+
     return (
         <div className="max-w-md w-full mx-auto mt-16 px-6">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
@@ -37,7 +37,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                     </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-slate-400 mb-1.5">
                             Username
@@ -63,9 +63,18 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                         />
                     </div>
 
+                    <div className="text-center">
+                        <Link
+                            to="/forgot"
+                            className="text-sm text-indigo-400 hover:text-indigo-300"
+                        >
+                            Forgot username or password?
+                        </Link>
+                    </div>
+
                     <button
                         type="submit"
-                        className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all mt-6"
+                        className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg shadow-[0_0_20px_rgba(99,102,241,0.3)] transition-all"
                     >
                         Login
                     </button>

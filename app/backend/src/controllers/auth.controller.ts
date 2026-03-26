@@ -5,7 +5,10 @@ import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { pool, query } from "../db/client.js";
 import { env } from "../config/env.js";
-import { sendOtpEmail } from "../services/email.service.js";
+import {
+    sendOtpEmail,
+    sendPasswordResetOtpEmail,
+} from "../services/email.service.js";
 
 const registerSchema = z.object({
     username: z
@@ -29,6 +32,25 @@ const verifyOtpSchema = z.object({
 
 const resendOtpSchema = z.object({
     email: z.email(),
+});
+
+const requestPasswordResetSchema = z.object({
+    email: z.email(),
+});
+
+const resendPasswordResetSchema = z.object({
+    email: z.email(),
+});
+
+const verifyPasswordResetSchema = z.object({
+    email: z.email(),
+    otp: z.string().min(4).max(12),
+});
+
+const resetPasswordSchema = z.object({
+    email: z.email(),
+    otp: z.string().min(4).max(12),
+    password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 const SALT_ROUNDS = 12;
@@ -274,4 +296,199 @@ export async function login(req: Request, res: Response) {
         token: signToken({ id: user.id, username: user.username }),
         user: { id: user.id, username: user.username },
     });
+}
+
+export async function requestPasswordReset(req: Request, res: Response) {
+    const parsed = requestPasswordResetSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: z.flattenError(parsed.error) });
+        return;
+    }
+
+    const { email } = parsed.data;
+
+    const existing = await query<{ username: string }>(
+        "SELECT username FROM users WHERE email = $1",
+        [email],
+    );
+    if (existing.rows.length === 0) {
+        res.status(404).json({ error: "Email not found" });
+        return;
+    }
+
+    const username = existing.rows[0]!.username;
+
+    const otp = createOtp();
+    const otpHash = hashOtp(otp);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    await query(
+        `INSERT INTO password_reset_requests (email, otp_hash, expires_at)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (email) DO UPDATE SET
+            otp_hash = EXCLUDED.otp_hash,
+            expires_at = EXCLUDED.expires_at,
+            created_at = now()`,
+        [email, otpHash, expiresAt],
+    );
+
+    setTimeout(() => {
+        void sendPasswordResetOtpEmail(email, username, otp).catch((err) => {
+            console.error("Failed to send password reset OTP email:", err);
+        });
+    }, 0);
+
+    res.status(200).json({ message: "Password reset OTP sent" });
+}
+
+export async function resendPasswordReset(req: Request, res: Response) {
+    const parsed = resendPasswordResetSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: z.flattenError(parsed.error) });
+        return;
+    }
+
+    const { email } = parsed.data;
+
+    const { rows } = await query<{
+        email: string;
+        created_at: Date;
+        username: string;
+    }>(
+        "SELECT pr.email, pr.created_at, u.username FROM password_reset_requests pr JOIN users u ON u.email = pr.email WHERE pr.email = $1",
+        [email],
+    );
+
+    if (rows.length === 0) {
+        res.status(400).json({ error: "Password reset request not found" });
+        return;
+    }
+
+    const request = rows[0]!;
+    const elapsedMs = Date.now() - request.created_at.getTime();
+    if (elapsedMs < RESEND_COOLDOWN_MS) {
+        const retryAfter = Math.ceil((RESEND_COOLDOWN_MS - elapsedMs) / 1000);
+        res.status(429).json({
+            error: `Please wait ${retryAfter}s before resending OTP`,
+            retryAfter,
+        });
+        return;
+    }
+
+    const otp = createOtp();
+    const otpHash = hashOtp(otp);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    await query(
+        "UPDATE password_reset_requests SET otp_hash = $1, expires_at = $2, created_at = now() WHERE email = $3",
+        [otpHash, expiresAt, email],
+    );
+
+    setTimeout(() => {
+        void sendPasswordResetOtpEmail(email, request.username, otp).catch(
+            (err) => {
+                console.error(
+                    "Failed to resend password reset OTP email:",
+                    err,
+                );
+            },
+        );
+    }, 0);
+
+    res.status(200).json({ message: "Password reset OTP resent" });
+}
+
+export async function verifyPasswordReset(req: Request, res: Response) {
+    const parsed = verifyPasswordResetSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: z.flattenError(parsed.error) });
+        return;
+    }
+
+    const { email, otp } = parsed.data;
+
+    const { rows } = await query<{
+        otp_hash: string;
+        expires_at: Date;
+    }>(
+        "SELECT otp_hash, expires_at FROM password_reset_requests WHERE email = $1",
+        [email],
+    );
+
+    if (rows.length === 0) {
+        res.status(400).json({ error: "Password reset request not found" });
+        return;
+    }
+
+    const request = rows[0]!;
+
+    if (request.expires_at.getTime() < Date.now()) {
+        await query("DELETE FROM password_reset_requests WHERE email = $1", [
+            email,
+        ]);
+        res.status(400).json({ error: "OTP expired" });
+        return;
+    }
+
+    if (!verifyOtpHash(otp, request.otp_hash)) {
+        res.status(401).json({ error: "Invalid OTP" });
+        return;
+    }
+
+    res.status(200).json({ message: "OTP verified" });
+}
+
+export async function resetPassword(req: Request, res: Response) {
+    const parsed = resetPasswordSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: z.flattenError(parsed.error) });
+        return;
+    }
+
+    const { email, otp, password } = parsed.data;
+
+    const { rows } = await query<{
+        otp_hash: string;
+        expires_at: Date;
+    }>(
+        "SELECT otp_hash, expires_at FROM password_reset_requests WHERE email = $1",
+        [email],
+    );
+
+    if (rows.length === 0) {
+        res.status(400).json({ error: "Password reset request not found" });
+        return;
+    }
+
+    const request = rows[0]!;
+
+    if (request.expires_at.getTime() < Date.now()) {
+        await query("DELETE FROM password_reset_requests WHERE email = $1", [
+            email,
+        ]);
+        res.status(400).json({ error: "OTP expired" });
+        return;
+    }
+
+    if (!verifyOtpHash(otp, request.otp_hash)) {
+        res.status(401).json({ error: "Invalid OTP" });
+        return;
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    const updated = await query(
+        "UPDATE users SET password_hash = $1 WHERE email = $2",
+        [passwordHash, email],
+    );
+
+    if (updated.rowCount === 0) {
+        res.status(404).json({ error: "User not found" });
+        return;
+    }
+
+    await query("DELETE FROM password_reset_requests WHERE email = $1", [
+        email,
+    ]);
+
+    res.status(200).json({ message: "Password updated" });
 }

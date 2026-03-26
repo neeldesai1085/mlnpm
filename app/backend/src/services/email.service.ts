@@ -19,3 +19,16 @@ export async function sendOtpEmail(to: string, otp: string) {
         text: `Your OTP is ${otp}. It expires in 10 minutes.`,
     });
 }
+
+export async function sendPasswordResetOtpEmail(
+    to: string,
+    username: string,
+    otp: string,
+) {
+    await transporter.sendMail({
+        from: env.SMTP_FROM,
+        to,
+        subject: "Your mlnpm password reset code",
+        text: `Username: ${username}\nYour password reset OTP is ${otp}. It expires in 10 minutes.`,
+    });
+}
