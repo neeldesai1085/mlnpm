@@ -21,6 +21,12 @@ const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
     JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
     FRONTEND_URL: z.url().default("http://localhost:5173"),
+    SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
+    SMTP_PORT: z.coerce.number().default(465),
+    SMTP_USER: z.string().min(1, "SMTP_USER is required"),
+    SMTP_PASS: z.string().min(1, "SMTP_PASS is required"),
+    SMTP_FROM: z.string().min(1, "SMTP_FROM is required"),
+    SMTP_SECURE: z.coerce.boolean().default(true),
 });
 
 const parsed = envSchema.safeParse(process.env);
