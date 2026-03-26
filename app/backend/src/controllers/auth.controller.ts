@@ -27,8 +27,13 @@ const verifyOtpSchema = z.object({
     otp: z.string().min(4).max(12),
 });
 
+const resendOtpSchema = z.object({
+    email: z.email(),
+});
+
 const SALT_ROUNDS = 12;
 const OTP_TTL_MS = 10 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 30 * 1000;
 
 function signToken(payload: { id: string; username: string }): string {
     return jwt.sign(payload, env.JWT_SECRET, { expiresIn: "7d" });
@@ -181,6 +186,55 @@ export async function verifyOtp(req: Request, res: Response) {
     } finally {
         client.release();
     }
+}
+
+export async function resendOtp(req: Request, res: Response) {
+    const parsed = resendOtpSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({ error: z.flattenError(parsed.error) });
+        return;
+    }
+
+    const { email } = parsed.data;
+
+    const { rows } = await query<{
+        email: string;
+        created_at: Date;
+    }>("SELECT email, created_at FROM otp_requests WHERE email = $1", [email]);
+
+    if (rows.length === 0) {
+        res.status(400).json({ error: "OTP request not found" });
+        return;
+    }
+
+    const request = rows[0]!;
+    const elapsedMs = Date.now() - request.created_at.getTime();
+    if (elapsedMs < RESEND_COOLDOWN_MS) {
+        const retryAfter = Math.ceil((RESEND_COOLDOWN_MS - elapsedMs) / 1000);
+        res.status(429).json({
+            error: `Please wait ${retryAfter}s before resending OTP`,
+            retryAfter,
+        });
+        return;
+    }
+
+    const otp = createOtp();
+    const otpHash = hashOtp(otp);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    await query(
+        "UPDATE otp_requests SET otp_hash = $1, expires_at = $2, created_at = now() WHERE email = $3",
+        [otpHash, expiresAt, email],
+    );
+
+    try {
+        await sendOtpEmail(email, otp);
+    } catch {
+        res.status(500).json({ error: "Failed to send OTP email" });
+        return;
+    }
+
+    res.status(200).json({ message: "OTP resent" });
 }
 
 export async function login(req: Request, res: Response) {
