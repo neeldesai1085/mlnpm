@@ -19,7 +19,7 @@ function Navbar({ user, onLogout }: { user: User | null; onLogout: () => void })
                 <Link to="/explore" className="text-sm font-medium text-slate-400 hover:text-white transition-colors">Explore</Link>
                 {user ? (
                 <>
-                    <span className="text-sm font-medium text-slate-300">👤 {user.username}</span>
+                    <span className="text-sm font-medium text-slate-300">{user.username}</span>
                     <button 
                     className="px-4 py-2 text-sm font-medium text-indigo-400 border border-indigo-500/50 rounded-lg hover:bg-indigo-500/10 transition-colors" 
                     onClick={handleLogout}
