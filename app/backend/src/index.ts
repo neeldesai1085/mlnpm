@@ -28,6 +28,16 @@ app.use("/auth", authRoutes);
 app.use("/packages", packagesRoutes);
 app.use("/packages/:name/versions", versionsRoutes);
 
+const OTP_CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
+
+setInterval(async () => {
+    try {
+        await pool.query("DELETE FROM otp_requests WHERE expires_at < now()");
+    } catch (err) {
+        console.error("Failed to cleanup expired OTP entries:", err);
+    }
+}, OTP_CLEANUP_INTERVAL_MS);
+
 app.use((req: Request, res: Response) => {
     res.status(404).json({ error: "Not found" });
 });
