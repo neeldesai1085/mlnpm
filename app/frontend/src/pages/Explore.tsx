@@ -176,7 +176,7 @@ export default function Explore() {
                                 });
                             }
                         }}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-emerald-400"
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-emerald-400 cursor-pointer"
                         aria-label="Copy publish command"
                     >
                         <span className="text-slate-500">$</span> mlnpm publish
