@@ -18,11 +18,13 @@ CREATE TABLE IF NOT EXISTS packages (
     description TEXT DEFAULT '',
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    access_count BIGINT NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_packages_name ON packages (name);
 CREATE INDEX IF NOT EXISTS idx_packages_owner_id ON packages (owner_id);
+CREATE INDEX IF NOT EXISTS idx_packages_access_count ON packages (access_count);
 
 CREATE TABLE IF NOT EXISTS versions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
