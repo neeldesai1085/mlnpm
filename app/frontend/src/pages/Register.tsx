@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import CustomToast from "../components/CustomToast";
+import { useToastState } from "../hooks/useToastState";
 import { Link, useNavigate } from "react-router-dom";
 import { api, setAuth } from "../utils/api";
 
@@ -8,10 +10,9 @@ function Register({ onLogin }: { onLogin: () => void }) {
     const [password, setPassword] = useState("");
     const [otp, setOtp] = useState("");
     const [otpSent, setOtpSent] = useState(false);
-    const [notice, setNotice] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
-    const [error, setError] = useState<string | null>(null);
+    const { toast, showToast, setOpen } = useToastState();
 
     const navigate = useNavigate();
 
@@ -40,19 +41,24 @@ function Register({ onLogin }: { onLogin: () => void }) {
             return;
         }
 
-        setError(null);
-        setNotice(null);
-
         try {
             setIsSubmitting(true);
             await api("/auth/resend-otp", {
                 method: "POST",
                 body: JSON.stringify({ email }),
             });
-            setNotice("New OTP sent to your email.");
+            showToast({
+                title: "OTP sent",
+                message: "New OTP sent to your email.",
+                variant: "success",
+            });
             setResendCooldown(30);
         } catch (err: unknown) {
-            setError((err as Error).message);
+            showToast({
+                title: "Resend failed",
+                message: (err as Error).message,
+                variant: "error",
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -62,28 +68,42 @@ function Register({ onLogin }: { onLogin: () => void }) {
         e.preventDefault();
         if (isSubmitting) return;
 
-        setError(null);
-        setNotice(null);
-
         if (!otpSent) {
             if (!/^[a-z0-9_-]+$/.test(username)) {
-                return setError(
-                    "Username can only contain lowercase letters, numbers, underscores, and dashes.",
-                );
+                showToast({
+                    title: "Invalid username",
+                    message:
+                        "Username can only contain lowercase letters, numbers, underscores, and dashes.",
+                    variant: "error",
+                });
+                return;
             }
 
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return setError("Please enter a valid email address.");
+                showToast({
+                    title: "Invalid email",
+                    message: "Please enter a valid email address.",
+                    variant: "error",
+                });
+                return;
             }
 
             if (!pwdRules.every((rule) => rule.valid)) {
-                return setError(
-                    "Please ensure all password requirements are met.",
-                );
+                showToast({
+                    title: "Weak password",
+                    message: "Please ensure all password requirements are met.",
+                    variant: "error",
+                });
+                return;
             }
         } else {
             if (!otp.trim()) {
-                return setError("Please enter the OTP sent to your email.");
+                showToast({
+                    title: "Missing OTP",
+                    message: "Please enter the OTP sent to your email.",
+                    variant: "error",
+                });
+                return;
             }
         }
 
@@ -96,7 +116,11 @@ function Register({ onLogin }: { onLogin: () => void }) {
                     body: JSON.stringify({ username, email, password }),
                 });
                 setOtpSent(true);
-                setNotice("OTP sent to your email.");
+                showToast({
+                    title: "OTP sent",
+                    message: "OTP sent to your email.",
+                    variant: "success",
+                });
                 setResendCooldown(30);
             } else {
                 const data = await api("/auth/verify-otp", {
@@ -108,7 +132,11 @@ function Register({ onLogin }: { onLogin: () => void }) {
                 navigate("/explore");
             }
         } catch (err: unknown) {
-            setError((err as Error).message);
+            showToast({
+                title: "Registration failed",
+                message: (err as Error).message,
+                variant: "error",
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -120,17 +148,6 @@ function Register({ onLogin }: { onLogin: () => void }) {
                 <h2 className="text-2xl font-bold text-white text-center mb-8">
                     Create Account
                 </h2>
-
-                {notice && (
-                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-sm">
-                        {notice}
-                    </div>
-                )}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg text-sm">
-                        {error}
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                     <div className={otpSent ? "opacity-70" : ""}>
@@ -302,6 +319,8 @@ function Register({ onLogin }: { onLogin: () => void }) {
                     </Link>
                 </p>
             </div>
+
+            <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
 }

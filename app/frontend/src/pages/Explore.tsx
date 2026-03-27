@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import CustomToast from "../components/CustomToast";
+import { useToastState } from "../hooks/useToastState";
 import { api } from "../utils/api";
 
 type PackageSummary = {
@@ -16,6 +18,8 @@ export default function Explore() {
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const { toast, showToast, setOpen } = useToastState();
+    const publishCommand = "mlnpm publish my-model";
 
     const trimmedSearch = useMemo(() => search.trim(), [search]);
 
@@ -41,11 +45,16 @@ export default function Explore() {
                 if (!isActive) {
                     return;
                 }
-                setError(
+                const message =
                     err instanceof Error
                         ? err.message
-                        : "Failed to load packages",
-                );
+                        : "Failed to load packages";
+                setError(message);
+                showToast({
+                    title: "Explore failed",
+                    message,
+                    variant: "error",
+                });
                 setPackages([]);
             } finally {
                 if (isActive) {
@@ -58,7 +67,7 @@ export default function Explore() {
             isActive = false;
             clearTimeout(timer);
         };
-    }, [trimmedSearch]);
+    }, [trimmedSearch, showToast]);
 
     const hasResults = packages.length > 0;
     const showEmpty = !loading && !error && !hasResults;
@@ -88,11 +97,7 @@ export default function Explore() {
                 </div>
             </div>
 
-            {error ? (
-                <div className="mb-8 rounded-2xl border border-red-500/40 bg-red-500/10 px-6 py-4 text-red-200">
-                    {error}
-                </div>
-            ) : null}
+            {error ? null : null}
 
             {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -150,12 +155,36 @@ export default function Explore() {
                             ? "Try another name or clear the search."
                             : "Be the first! Use the CLI to publish an ONNX model."}
                     </p>
-                    <div className="inline-flex items-center gap-2 px-6 py-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-emerald-400">
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            try {
+                                await navigator.clipboard.writeText(
+                                    publishCommand,
+                                );
+                                showToast({
+                                    title: "Copied",
+                                    message:
+                                        "Publish command copied to clipboard.",
+                                    variant: "success",
+                                });
+                            } catch {
+                                showToast({
+                                    title: "Copy failed",
+                                    message: "Please try again.",
+                                    variant: "error",
+                                });
+                            }
+                        }}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-emerald-400"
+                        aria-label="Copy publish command"
+                    >
                         <span className="text-slate-500">$</span> mlnpm publish
                         my-model
-                    </div>
+                    </button>
                 </div>
             ) : null}
+            <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
 }

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import CustomToast from "../components/CustomToast";
+import { useToastState } from "../hooks/useToastState";
 import { Link } from "react-router-dom";
 import { api } from "../utils/api";
 
@@ -9,10 +11,9 @@ export default function ForgotPassword() {
     const [otpSent, setOtpSent] = useState(false);
     const [otpVerified, setOtpVerified] = useState(false);
     const [success, setSuccess] = useState(false);
-    const [notice, setNotice] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [resendCooldown, setResendCooldown] = useState(0);
+    const { toast, showToast, setOpen } = useToastState();
 
     const pwdRules = [
         { label: "Min 8 characters", valid: password.length >= 8 },
@@ -39,19 +40,24 @@ export default function ForgotPassword() {
             return;
         }
 
-        setError(null);
-        setNotice(null);
-
         try {
             setIsSubmitting(true);
             await api("/auth/resend-password-reset", {
                 method: "POST",
                 body: JSON.stringify({ email }),
             });
-            setNotice("New OTP sent to your email.");
+            showToast({
+                title: "OTP sent",
+                message: "New OTP sent to your email.",
+                variant: "success",
+            });
             setResendCooldown(30);
         } catch (err: unknown) {
-            setError((err as Error).message);
+            showToast({
+                title: "Resend failed",
+                message: (err as Error).message,
+                variant: "error",
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -61,22 +67,32 @@ export default function ForgotPassword() {
         e.preventDefault();
         if (isSubmitting) return;
 
-        setError(null);
-        setNotice(null);
-
         if (!otpSent) {
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return setError("Please enter a valid email address.");
+                showToast({
+                    title: "Invalid email",
+                    message: "Please enter a valid email address.",
+                    variant: "error",
+                });
+                return;
             }
         } else if (!otpVerified) {
             if (!otp.trim()) {
-                return setError("Please enter the OTP sent to your email.");
+                showToast({
+                    title: "Missing OTP",
+                    message: "Please enter the OTP sent to your email.",
+                    variant: "error",
+                });
+                return;
             }
         } else {
             if (!pwdRules.every((rule) => rule.valid)) {
-                return setError(
-                    "Please ensure all password requirements are met.",
-                );
+                showToast({
+                    title: "Weak password",
+                    message: "Please ensure all password requirements are met.",
+                    variant: "error",
+                });
+                return;
             }
         }
 
@@ -89,7 +105,11 @@ export default function ForgotPassword() {
                     body: JSON.stringify({ email }),
                 });
                 setOtpSent(true);
-                setNotice("OTP sent to your email.");
+                showToast({
+                    title: "OTP sent",
+                    message: "OTP sent to your email.",
+                    variant: "success",
+                });
                 setResendCooldown(30);
             } else if (!otpVerified) {
                 await api("/auth/verify-password-reset", {
@@ -97,17 +117,29 @@ export default function ForgotPassword() {
                     body: JSON.stringify({ email, otp }),
                 });
                 setOtpVerified(true);
-                setNotice("OTP verified. Set a new password.");
+                showToast({
+                    title: "OTP verified",
+                    message: "OTP verified. Set a new password.",
+                    variant: "success",
+                });
             } else {
                 await api("/auth/reset-password", {
                     method: "POST",
                     body: JSON.stringify({ email, otp, password }),
                 });
                 setSuccess(true);
-                setNotice("Password updated successfully.");
+                showToast({
+                    title: "Password updated",
+                    message: "Password updated successfully.",
+                    variant: "success",
+                });
             }
         } catch (err: unknown) {
-            setError((err as Error).message);
+            showToast({
+                title: "Request failed",
+                message: (err as Error).message,
+                variant: "error",
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -122,17 +154,6 @@ export default function ForgotPassword() {
                 <h2 className="text-2xl font-bold text-white text-center mb-8">
                     Forgot Username or Password
                 </h2>
-
-                {notice && (
-                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-sm">
-                        {notice}
-                    </div>
-                )}
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg text-sm">
-                        {error}
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-5" noValidate>
                     <div className={emailMuted ? "opacity-70" : ""}>
@@ -291,6 +312,8 @@ export default function ForgotPassword() {
                     </div>
                 )}
             </div>
+
+            <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
 }

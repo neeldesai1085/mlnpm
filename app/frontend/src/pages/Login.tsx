@@ -1,16 +1,17 @@
 import { useState } from "react";
+import CustomToast from "../components/CustomToast";
+import { useToastState } from "../hooks/useToastState";
 import { Link, useNavigate } from "react-router-dom";
 import { api, setAuth } from "../utils/api";
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    const { toast, showToast, setOpen } = useToastState();
 
     const navigate = useNavigate();
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError(null);
         try {
             const data = await api("/auth/login", {
                 method: "POST",
@@ -20,7 +21,11 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             onLogin();
             navigate("/explore");
         } catch (err: unknown) {
-            setError((err as Error).message);
+            showToast({
+                title: "Login failed",
+                message: (err as Error).message,
+                variant: "error",
+            });
         }
     };
 
@@ -30,12 +35,6 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                 <h2 className="text-2xl font-bold text-white text-center mb-8">
                     Welcome Back
                 </h2>
-
-                {error && (
-                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-500 rounded-lg text-sm">
-                        {error}
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -90,6 +89,8 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
                     </Link>
                 </p>
             </div>
+
+            <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
 }
