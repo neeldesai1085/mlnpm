@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import Package from "./pages/Package";
+import NotFound from "./pages/NotFound";
 
 export default function App() {
     const [user, setUser] = useState<User | null>(getUser());
@@ -36,6 +37,8 @@ export default function App() {
                 <Route path="/forgot" element={<ForgotPassword />} />
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/packages/:name" element={<Package />} />
+
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </BrowserRouter>
     );
