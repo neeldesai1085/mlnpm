@@ -63,10 +63,13 @@ export async function getPackage(req: Request, res: Response) {
         return;
     }
 
-    await query(
-        "UPDATE packages SET access_count = access_count + 1 WHERE id = $1",
-        [pkgResult.rows[0].id],
-    );
+    const shouldCountView = req.query.view === "1";
+    if (shouldCountView) {
+        await query(
+            "UPDATE packages SET access_count = access_count + 1 WHERE id = $1",
+            [pkgResult.rows[0].id],
+        );
+    }
 
     const versionsResult = await query(
         `SELECT id, version, onnx_file_size, metadata, is_yanked, created_at

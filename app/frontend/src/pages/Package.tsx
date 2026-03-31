@@ -51,7 +51,7 @@ export default function Package() {
             }
         });
 
-        api(`/packages/${name}`)
+        api(`/packages/${name}?view=1`)
             .then((data) => {
                 if (!isActive) {
                     return;
