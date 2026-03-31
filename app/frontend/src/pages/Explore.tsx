@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
 import { api } from "../utils/api";
@@ -113,9 +114,11 @@ export default function Explore() {
             {!loading && hasResults ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {packages.map((pkg) => (
-                        <div
+                        <Link
                             key={pkg.id}
-                            className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-[0_0_20px_rgba(15,23,42,0.25)]"
+                            to={`/packages/${pkg.name}`}
+                            className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 shadow-[0_0_20px_rgba(15,23,42,0.25)] transition-all hover:-translate-y-0.5 hover:border-slate-700 hover:bg-slate-900/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+                            aria-label={`Open ${pkg.name} package`}
                         >
                             <div className="flex items-center justify-between mb-3">
                                 <h2 className="text-lg font-semibold text-white">
@@ -138,7 +141,7 @@ export default function Explore() {
                                     ).toLocaleDateString()}
                                 </span>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             ) : null}
