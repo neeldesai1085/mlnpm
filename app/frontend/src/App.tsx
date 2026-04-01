@@ -10,7 +10,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import Package from "./pages/Package";
-import Upload from "./pages/Upload";
+import Upload from "./pages/Manage";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
