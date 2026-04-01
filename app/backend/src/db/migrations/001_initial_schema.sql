@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS packages (
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    documentation_md TEXT NOT NULL DEFAULT '',
     access_count BIGINT NOT NULL DEFAULT 0
 );
 

@@ -12,6 +12,12 @@ const createPackageSchema = z.object({
             "Name: start with a-z/0-9, then a-z, 0-9, ., _, -",
         ),
     description: z.string().max(2000).optional().default(""),
+    documentation_md: z.string().max(50000).optional().default(""),
+});
+
+const updatePackageSchema = z.object({
+    description: z.string().max(2000).optional(),
+    documentation_md: z.string().max(50000).optional(),
 });
 
 export async function createPackage(req: Request, res: Response) {
@@ -23,6 +29,7 @@ export async function createPackage(req: Request, res: Response) {
         return;
     }
     const { name, description } = parsed.data;
+    const documentation_md = parsed.data.documentation_md ?? "";
     const ownerId = req.user!.id;
 
     const existing = await query("SELECT id FROM packages WHERE name = $1", [
@@ -38,9 +45,9 @@ export async function createPackage(req: Request, res: Response) {
         name: string;
         created_at: string;
     }>(
-        `INSERT INTO packages (name, description, owner_id)
-        VALUES ($1, $2, $3) RETURNING id, name, created_at`,
-        [name, description, ownerId],
+        `INSERT INTO packages (name, description, documentation_md, owner_id)
+        VALUES ($1, $2, $3, $4) RETURNING id, name, created_at`,
+        [name, description, documentation_md, ownerId],
     );
     res.status(201).json({
         message: `Package "${name}" created`,
@@ -51,7 +58,7 @@ export async function createPackage(req: Request, res: Response) {
 export async function getPackage(req: Request, res: Response) {
     const { name } = req.params;
     const pkgResult = await query(
-        `SELECT p.id, p.name, p.description, p.created_at, p.updated_at, p.access_count,
+        `SELECT p.id, p.name, p.description, p.documentation_md, p.created_at, p.updated_at, p.access_count,
                 u.username AS owner
         FROM packages p JOIN users u ON u.id = p.owner_id
         WHERE p.name = $1`,
@@ -82,6 +89,60 @@ export async function getPackage(req: Request, res: Response) {
     });
 }
 
+export async function updatePackage(req: Request, res: Response) {
+    const parsed = updatePackageSchema.safeParse(req.body);
+    if (!parsed.success) {
+        res.status(400).json({
+            error: z.flattenError(parsed.error).fieldErrors,
+        });
+        return;
+    }
+
+    const { name } = req.params;
+    const ownerId = req.user!.id;
+    const { description, documentation_md } = parsed.data;
+
+    const shouldUpdateDescription = typeof description === "string";
+    const shouldUpdateDocs = typeof documentation_md === "string";
+
+    if (!shouldUpdateDescription && !shouldUpdateDocs) {
+        res.status(400).json({ error: "No updates provided" });
+        return;
+    }
+
+    const { rowCount, rows } = await query<{
+        id: string;
+        name: string;
+        description: string;
+        documentation_md: string;
+        updated_at: string;
+    }>(
+        `UPDATE packages
+        SET description = COALESCE($1, description),
+            documentation_md = COALESCE($2, documentation_md)
+        WHERE name = $3 AND owner_id = $4
+        RETURNING id, name, description, documentation_md, updated_at`,
+        [
+            shouldUpdateDescription ? description : null,
+            shouldUpdateDocs ? documentation_md : null,
+            name,
+            ownerId,
+        ],
+    );
+
+    if (!rowCount) {
+        res.status(404).json({
+            error: `Package "${name}" not found or not owned by you`,
+        });
+        return;
+    }
+
+    res.json({
+        message: `Package "${name}" updated`,
+        package: rows[0],
+    });
+}
+
 export async function getPackages(req: Request, res: Response) {
     const search =
         typeof req.query.search === "string" ? req.query.search.trim() : "";
@@ -106,7 +167,7 @@ export async function getPackages(req: Request, res: Response) {
     }
 
     const { rows } = await query(
-        `SELECT p.id, p.name, p.description, p.created_at, p.updated_at, p.access_count,
+        `SELECT p.id, p.name, p.description, p.documentation_md, p.created_at, p.updated_at, p.access_count,
                 u.username AS owner
         FROM packages p JOIN users u ON u.id = p.owner_id
         ORDER BY p.access_count DESC, p.name ASC
