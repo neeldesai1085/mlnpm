@@ -116,18 +116,21 @@ function isAllowedNextVersion(latest: string, next: string): boolean {
         return false;
     }
 
-    const sameMajor = parsedNext.major === parsedLatest.major;
-    const sameMinor = parsedNext.minor === parsedLatest.minor;
-    const samePatch = parsedNext.patch === parsedLatest.patch;
+    if (parsedNext.major === parsedLatest.major + 1) {
+        return parsedNext.minor === 0 && parsedNext.patch === 0;
+    }
+
+    if (
+        parsedNext.major === parsedLatest.major &&
+        parsedNext.minor === parsedLatest.minor + 1
+    ) {
+        return parsedNext.patch === 0;
+    }
 
     return (
-        (parsedNext.major === parsedLatest.major + 1 &&
-            sameMinor &&
-            samePatch) ||
-        (sameMajor &&
-            parsedNext.minor === parsedLatest.minor + 1 &&
-            samePatch) ||
-        (sameMajor && sameMinor && parsedNext.patch === parsedLatest.patch + 1)
+        parsedNext.major === parsedLatest.major &&
+        parsedNext.minor === parsedLatest.minor &&
+        parsedNext.patch === parsedLatest.patch + 1
     );
 }
 
