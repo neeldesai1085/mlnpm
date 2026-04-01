@@ -1,10 +1,12 @@
 import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { getToken } from "../utils/api";
 
 export default function Landing() {
     const command = "mlnpm install package-name";
     const { toast, showToast, setOpen } = useToastState();
+    const navigate = useNavigate();
 
     const handleCopy = async () => {
         try {
@@ -53,6 +55,26 @@ export default function Landing() {
                 >
                     Explore Packages
                 </Link>
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (!getToken()) {
+                            showToast({
+                                title: "Login required",
+                                message: "Please login or sign up to upload.",
+                                variant: "error",
+                            });
+                            window.setTimeout(() => {
+                                navigate("/login");
+                            }, 600);
+                            return;
+                        }
+                        navigate("/upload");
+                    }}
+                    className="px-6 py-3 text-base font-semibold text-emerald-400 border border-emerald-500/40 rounded-lg hover:bg-emerald-500/10 transition-all"
+                >
+                    Upload Model
+                </button>
                 <Link
                     to="/register"
                     className="px-6 py-3 text-base font-semibold text-indigo-400 border border-indigo-500/50 rounded-lg hover:bg-indigo-500/10 transition-all"

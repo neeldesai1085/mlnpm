@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import Explore from "./pages/Explore";
 import Package from "./pages/Package";
+import Upload from "./pages/Upload";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
                 />
                 <Route path="/forgot" element={<ForgotPassword />} />
                 <Route path="/explore" element={<Explore />} />
+                <Route path="/upload" element={<Upload />} />
                 <Route path="/packages/:name" element={<Package />} />
 
                 <Route path="*" element={<NotFound />} />
