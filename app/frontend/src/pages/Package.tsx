@@ -234,7 +234,7 @@ export default function Package() {
                 {pkg.name}
             </button>
 
-            <div className="mb-12 w-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+            <div className="mt-6 mb-12 w-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
                 <h2 className="text-2xl font-bold text-white mb-4">
                     Documentation
                 </h2>
