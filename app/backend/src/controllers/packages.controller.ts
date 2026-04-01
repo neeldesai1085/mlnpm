@@ -49,6 +49,11 @@ export async function createPackage(req: Request, res: Response) {
         VALUES ($1, $2, $3, $4) RETURNING id, name, created_at`,
         [name, description, documentation_md, ownerId],
     );
+
+    await query(
+        "UPDATE users SET packages_count = packages_count + 1 WHERE id = $1",
+        [ownerId],
+    );
     res.status(201).json({
         message: `Package "${name}" created`,
         package: rows[0],
@@ -192,6 +197,11 @@ export async function deletePackage(req: Request, res: Response) {
         });
         return;
     }
+
+    await query(
+        "UPDATE users SET packages_count = GREATEST(packages_count - 1, 0) WHERE id = $1",
+        [ownerId],
+    );
 
     res.json({ message: `Package "${name}" deleted` });
 }
