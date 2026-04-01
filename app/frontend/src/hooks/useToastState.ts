@@ -45,7 +45,7 @@ export function useToastState(defaultDurationMs = DEFAULT_DURATION_MS) {
 
             setToast((current) => ({
                 ...current,
-                open: false,
+                open: true,
                 title: resolvedTitle,
                 message,
                 variant: resolvedVariant,
@@ -55,10 +55,8 @@ export function useToastState(defaultDurationMs = DEFAULT_DURATION_MS) {
 
             if (openTimerRef.current) {
                 window.clearTimeout(openTimerRef.current);
+                openTimerRef.current = null;
             }
-            openTimerRef.current = window.setTimeout(() => {
-                setToast((current) => ({ ...current, open: true }));
-            }, 10);
         },
         [defaultDurationMs],
     );

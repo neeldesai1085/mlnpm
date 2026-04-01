@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useParams } from "react-router-dom";
 import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
@@ -15,9 +18,90 @@ type PackageVersion = {
 type PackageDetails = {
     name: string;
     description?: string;
+    documentation_md?: string;
     owner: string;
     created_at: string;
     versions: PackageVersion[];
+};
+
+const markdownComponents: Components = {
+    h1: ({ children }) => (
+        <h1 className="mt-5 mb-3 text-2xl font-bold text-white">{children}</h1>
+    ),
+    h2: ({ children }) => (
+        <h2 className="mt-5 mb-3 text-xl font-bold text-white">{children}</h2>
+    ),
+    h3: ({ children }) => (
+        <h3 className="mt-4 mb-2 text-lg font-semibold text-white">
+            {children}
+        </h3>
+    ),
+    h4: ({ children }) => (
+        <h4 className="mt-4 mb-2 text-base font-semibold text-white">
+            {children}
+        </h4>
+    ),
+    p: ({ children }) => (
+        <p className="my-2 text-sm text-slate-200">{children}</p>
+    ),
+    ul: ({ children }) => (
+        <ul className="my-2 list-disc pl-5 text-sm text-slate-200">
+            {children}
+        </ul>
+    ),
+    ol: ({ children }) => (
+        <ol className="my-2 list-decimal pl-5 text-sm text-slate-200">
+            {children}
+        </ol>
+    ),
+    code: ({ className, children, ...props }) => {
+        const isInline = !className;
+
+        return (
+            <code
+                className={
+                    isInline
+                        ? "rounded-md bg-slate-950/80 px-1.5 py-0.5 font-mono text-[0.85rem] text-slate-100"
+                        : "text-slate-100"
+                }
+                {...props}
+            >
+                {children}
+            </code>
+        );
+    },
+    pre: ({ children }) => (
+        <pre className="my-3 overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm">
+            {children}
+        </pre>
+    ),
+    a: ({ children, href }) => (
+        <a className="text-indigo-300 underline" href={href}>
+            {children}
+        </a>
+    ),
+    blockquote: ({ children }) => (
+        <blockquote className="my-3 border-l-2 border-indigo-500 pl-3 text-sm text-slate-400">
+            {children}
+        </blockquote>
+    ),
+    table: ({ children }) => (
+        <div className="my-3 overflow-x-auto">
+            <table className="w-full border-collapse text-sm text-slate-200">
+                {children}
+            </table>
+        </div>
+    ),
+    th: ({ children }) => (
+        <th className="border border-slate-800 bg-slate-950/70 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-300">
+            {children}
+        </th>
+    ),
+    td: ({ children }) => (
+        <td className="border border-slate-800 px-3 py-2 text-sm text-slate-200">
+            {children}
+        </td>
+    ),
 };
 
 function formatBytes(bytes: number) {
@@ -33,6 +117,7 @@ export default function Package() {
     const [pkg, setPkg] = useState<PackageDetails | null>(null);
     const [loading, setLoading] = useState(false);
     const { toast, showToast, setOpen } = useToastState();
+    const installCommand = useMemo(() => `mlnpm install ${name ?? ""}`, [name]);
 
     useEffect(() => {
         if (!name) {
@@ -56,7 +141,8 @@ export default function Package() {
                 if (!isActive) {
                     return;
                 }
-                const details = data.package as PackageDetails;
+                const payload = data as { package: PackageDetails };
+                const details = payload.package;
                 setPkg(details);
                 if (!details?.versions?.length) {
                     showToast({
@@ -109,7 +195,7 @@ export default function Package() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto px-6 py-10">
+        <div className="max-w-6xl w-full mx-auto px-6 py-10">
             <div className="mb-8">
                 <h1 className="text-4xl font-extrabold font-mono text-indigo-400 mb-3">
                     {pkg.name}
@@ -124,9 +210,48 @@ export default function Package() {
                 </div>
             </div>
 
-            <div className="inline-flex items-center gap-2 px-6 py-4 mb-12 bg-slate-900 border border-slate-800 rounded-xl font-mono text-emerald-400 w-full sm:w-auto">
+            <button
+                type="button"
+                onClick={async () => {
+                    try {
+                        await navigator.clipboard.writeText(installCommand);
+                        showToast({
+                            title: "Copied",
+                            message: "Install command copied to clipboard.",
+                            variant: "success",
+                        });
+                    } catch {
+                        showToast({
+                            title: "Copy failed",
+                            message: "Please try again.",
+                            variant: "error",
+                        });
+                    }
+                }}
+                className="inline-flex w-full items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-6 py-4 font-mono text-emerald-400 cursor-pointer sm:w-auto"
+            >
                 <span className="text-slate-500">$</span> mlnpm install{" "}
                 {pkg.name}
+            </button>
+
+            <div className="mb-12 w-full rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
+                <h2 className="text-2xl font-bold text-white mb-4">
+                    Documentation
+                </h2>
+                <div className="max-w-none text-[0.95rem] leading-relaxed text-slate-200">
+                    {pkg.documentation_md ? (
+                        <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={markdownComponents}
+                        >
+                            {pkg.documentation_md}
+                        </ReactMarkdown>
+                    ) : (
+                        <p className="text-sm text-slate-500">
+                            No documentation provided yet.
+                        </p>
+                    )}
+                </div>
             </div>
 
             {pkg.versions.length > 0 ? (

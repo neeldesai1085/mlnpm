@@ -25,21 +25,39 @@ export function clearAuth() {
 }
 
 export async function api(path: string, options: RequestInit = {}) {
-    const headers: Record<string, string> = { 
-        "Content-Type": "application/json", 
-        ...(options.headers as Record<string, string>) 
+    const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(options.headers as Record<string, string>),
     };
 
     const token = getToken();
     if (token) {
         headers["Authorization"] = `Bearer ${token}`;
     }
-    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    const data = await res.json();
+    let res: Response;
+    try {
+        res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+    } catch {
+        throw new Error("Network error. Please check the backend connection.");
+    }
+
+    let data: unknown = null;
+    try {
+        data = await res.json();
+    } catch {
+        if (!res.ok) {
+            throw new Error(`Request failed (${res.status})`);
+        }
+        return null;
+    }
 
     if (!res.ok) {
-        throw new Error(data.error || `Request failed (${res.status})`);
+        const message =
+            typeof (data as { error?: unknown })?.error === "string"
+                ? (data as { error: string }).error
+                : `Request failed (${res.status})`;
+        throw new Error(message);
     }
-    
+
     return data;
 }
