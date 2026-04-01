@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Avatar from "@radix-ui/react-avatar";
 import { Menu, X } from "lucide-react";
 import { getToken } from "../utils/api";
@@ -14,6 +14,7 @@ function Navbar({
 }) {
     const [menuOpen, setMenuOpen] = useState(false);
     const [avatarOpen, setAvatarOpen] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
     const navigate = useNavigate();
     const isAuthenticated = Boolean(user && getToken());
 
@@ -23,6 +24,17 @@ function Navbar({
         setMenuOpen(false);
         setAvatarOpen(false);
     };
+
+    useEffect(() => {
+        const syncAvatar = () => {
+            setAvatarUrl(localStorage.getItem("mlnpm_avatar_url"));
+        };
+        syncAvatar();
+        window.addEventListener("avatar-updated", syncAvatar);
+        return () => {
+            window.removeEventListener("avatar-updated", syncAvatar);
+        };
+    }, []);
 
     return (
         <>
@@ -75,7 +87,7 @@ function Navbar({
                                     >
                                         <Avatar.Root className="h-7 w-7 overflow-hidden rounded-full">
                                             <Avatar.Image
-                                                src="/avatar.png"
+                                                src={avatarUrl || "/avatar.png"}
                                                 alt="User avatar"
                                                 className="h-full w-full object-cover"
                                             />
@@ -197,7 +209,10 @@ function Navbar({
                                         >
                                             <Avatar.Root className="h-7 w-7 overflow-hidden rounded-full border border-slate-700">
                                                 <Avatar.Image
-                                                    src="/avatar.png"
+                                                    src={
+                                                        avatarUrl ||
+                                                        "/avatar.png"
+                                                    }
                                                     alt="User avatar"
                                                     className="h-full w-full object-cover"
                                                 />

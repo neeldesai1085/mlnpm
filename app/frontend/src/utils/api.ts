@@ -54,6 +54,7 @@ export function getUser(): User | null {
 export function clearAuth() {
     localStorage.removeItem("mlnpm_token");
     localStorage.removeItem("mlnpm_user");
+    localStorage.removeItem("mlnpm_avatar_url");
 }
 
 export async function api(path: string, options: RequestInit = {}) {

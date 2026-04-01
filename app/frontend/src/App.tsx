@@ -12,6 +12,7 @@ import Explore from "./pages/Explore";
 import Package from "./pages/Package";
 import Upload from "./pages/Manage";
 import Delete from "./pages/Delete";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -40,6 +41,7 @@ export default function App() {
                 <Route path="/explore" element={<Explore />} />
                 <Route path="/upload" element={<Upload />} />
                 <Route path="/delete" element={<Delete />} />
+                <Route path="/profile" element={<Profile />} />
                 <Route path="/packages/:name" element={<Package />} />
 
                 <Route path="*" element={<NotFound />} />

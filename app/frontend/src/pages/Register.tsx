@@ -3,6 +3,8 @@ import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
 import { Link, useNavigate } from "react-router-dom";
 import { api, setAuth } from "../utils/api";
+import type { User } from "../utils/api";
+
 
 function Register({ onLogin }: { onLogin: () => void }) {
     const [username, setUsername] = useState("");
@@ -123,11 +125,23 @@ function Register({ onLogin }: { onLogin: () => void }) {
                 });
                 setResendCooldown(30);
             } else {
-                const data = await api("/auth/verify-otp", {
+                const data = (await api("/auth/verify-otp", {
                     method: "POST",
                     body: JSON.stringify({ email, otp }),
-                });
+                })) as { token: string; user: User };
                 setAuth(data.token, data.user);
+                const profile = (await api("/auth/me")) as {
+                    user?: { avatar_url?: string | null };
+                };
+                if (profile.user?.avatar_url) {
+                    localStorage.setItem(
+                        "mlnpm_avatar_url",
+                        profile.user.avatar_url,
+                    );
+                } else {
+                    localStorage.removeItem("mlnpm_avatar_url");
+                }
+                window.dispatchEvent(new Event("avatar-updated"));
                 onLogin();
                 navigate("/explore");
             }

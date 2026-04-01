@@ -3,6 +3,7 @@ import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
 import { Link, useNavigate } from "react-router-dom";
 import { api, setAuth } from "../utils/api";
+import type { User } from "../utils/api";
 
 export default function Login({ onLogin }: { onLogin: () => void }) {
     const [username, setUsername] = useState("");
@@ -13,11 +14,23 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const data = await api("/auth/login", {
+            const data = (await api("/auth/login", {
                 method: "POST",
                 body: JSON.stringify({ username, password }),
-            });
+            })) as { token: string; user: User };
             setAuth(data.token, data.user);
+            const profile = (await api("/auth/me")) as {
+                user?: { avatar_url?: string | null };
+            };
+            if (profile.user?.avatar_url) {
+                localStorage.setItem(
+                    "mlnpm_avatar_url",
+                    profile.user.avatar_url,
+                );
+            } else {
+                localStorage.removeItem("mlnpm_avatar_url");
+            }
+            window.dispatchEvent(new Event("avatar-updated"));
             onLogin();
             navigate("/explore");
         } catch (err: unknown) {
