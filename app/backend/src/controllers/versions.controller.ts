@@ -53,6 +53,84 @@ function ensureOnnxFile(name: string): string {
     return name;
 }
 
+type ParsedVersion = {
+    major: number;
+    minor: number;
+    patch: number;
+};
+
+function parseVersion(version: string): ParsedVersion | null {
+    const base = version.split("-")[0] ?? version;
+    const parts = base.split(".").map((part) => Number(part));
+    if (parts.length !== 3) {
+        return null;
+    }
+    const major = parts[0];
+    const minor = parts[1];
+    const patch = parts[2];
+    if (
+        major === undefined ||
+        minor === undefined ||
+        patch === undefined ||
+        !Number.isFinite(major) ||
+        !Number.isFinite(minor) ||
+        !Number.isFinite(patch)
+    ) {
+        return null;
+    }
+    return { major, minor, patch };
+}
+
+function compareVersions(a: string, b: string): number {
+    const parsedA = parseVersion(a);
+    const parsedB = parseVersion(b);
+    if (!parsedA || !parsedB) {
+        return 0;
+    }
+    if (parsedA.major !== parsedB.major) {
+        return parsedA.major - parsedB.major;
+    }
+    if (parsedA.minor !== parsedB.minor) {
+        return parsedA.minor - parsedB.minor;
+    }
+    return parsedA.patch - parsedB.patch;
+}
+
+function getLatestVersion(versions: string[]): string | null {
+    let latest: string | null = null;
+    for (const version of versions) {
+        if (!parseVersion(version)) {
+            continue;
+        }
+        if (!latest || compareVersions(version, latest) > 0) {
+            latest = version;
+        }
+    }
+    return latest;
+}
+
+function isAllowedNextVersion(latest: string, next: string): boolean {
+    const parsedLatest = parseVersion(latest);
+    const parsedNext = parseVersion(next);
+    if (!parsedLatest || !parsedNext) {
+        return false;
+    }
+
+    const sameMajor = parsedNext.major === parsedLatest.major;
+    const sameMinor = parsedNext.minor === parsedLatest.minor;
+    const samePatch = parsedNext.patch === parsedLatest.patch;
+
+    return (
+        (parsedNext.major === parsedLatest.major + 1 &&
+            sameMinor &&
+            samePatch) ||
+        (sameMajor &&
+            parsedNext.minor === parsedLatest.minor + 1 &&
+            samePatch) ||
+        (sameMajor && sameMinor && parsedNext.patch === parsedLatest.patch + 1)
+    );
+}
+
 export async function publishVersion(req: Request, res: Response) {
     const { name } = req.params;
     const userId = req.user!.id;
@@ -97,6 +175,28 @@ export async function publishVersion(req: Request, res: Response) {
     if (existingVer.rows.length > 0) {
         res.status(409).json({
             error: `Version ${version} already exists. Versions are immutable.`,
+        });
+        return;
+    }
+
+    const versionsResult = await query<{ version: string }>(
+        "SELECT version FROM versions WHERE package_id = $1",
+        [pkg.id],
+    );
+    const latestVersion = getLatestVersion(
+        versionsResult.rows.map((row) => row.version),
+    );
+
+    if (!latestVersion) {
+        if (version !== "1.0.0") {
+            res.status(400).json({
+                error: "First version must be 1.0.0",
+            });
+            return;
+        }
+    } else if (!isAllowedNextVersion(latestVersion, version)) {
+        res.status(400).json({
+            error: `Version must increment by 1 from latest ${latestVersion}`,
         });
         return;
     }
