@@ -176,3 +176,22 @@ export async function getPackages(req: Request, res: Response) {
     );
     res.json({ packages: rows });
 }
+
+export async function deletePackage(req: Request, res: Response) {
+    const { name } = req.params;
+    const ownerId = req.user!.id;
+
+    const { rowCount } = await query(
+        "DELETE FROM packages WHERE name = $1 AND owner_id = $2",
+        [name, ownerId],
+    );
+
+    if (!rowCount) {
+        res.status(404).json({
+            error: `Package "${name}" not found or not owned by you`,
+        });
+        return;
+    }
+
+    res.json({ message: `Package "${name}" deleted` });
+}

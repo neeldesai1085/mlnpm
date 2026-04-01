@@ -378,3 +378,35 @@ export async function getVersion(req: Request, res: Response) {
         files: downloadFiles,
     });
 }
+
+export async function rollbackVersion(req: Request, res: Response) {
+    const { name, version } = req.params;
+    const ownerId = req.user!.id;
+
+    const pkgResult = await query(
+        "SELECT id FROM packages WHERE name = $1 AND owner_id = $2",
+        [name, ownerId],
+    );
+
+    if (pkgResult.rows.length === 0) {
+        res.status(404).json({
+            error: `Package "${name}" not found or not owned by you`,
+        });
+        return;
+    }
+
+    const pkgId = pkgResult.rows[0].id as string;
+    const { rowCount } = await query(
+        "UPDATE versions SET is_yanked = true WHERE package_id = $1 AND version = $2",
+        [pkgId, version],
+    );
+
+    if (!rowCount) {
+        res.status(404).json({
+            error: `Version ${version} of "${name}" not found`,
+        });
+        return;
+    }
+
+    res.json({ message: `Version ${version} rolled back` });
+}

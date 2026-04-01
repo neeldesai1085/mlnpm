@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
     createPackage,
+    deletePackage,
     getPackage,
     getPackages,
     updatePackage,
@@ -11,6 +12,7 @@ const router = Router();
 
 router.post("/", requireAuth, createPackage);
 router.patch("/:name", requireAuth, updatePackage);
+router.delete("/:name", requireAuth, deletePackage);
 router.get("/", getPackages);
 router.get("/:name", getPackage);
 
