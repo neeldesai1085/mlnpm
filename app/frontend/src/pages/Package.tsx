@@ -289,7 +289,7 @@ export default function Package() {
                                             </span>
                                         </td>
                                         <td className="py-4 px-6">
-                                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide bg-emerald-500/10 text-emerald-400">
+                                            <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide bg-cyan-500/10 text-cyan-300">
                                                 {formatBytes(
                                                     version.onnx_file_size,
                                                 )}
@@ -306,7 +306,7 @@ export default function Package() {
                                                     Yanked
                                                 </span>
                                             ) : (
-                                                <span className="text-sm font-medium text-slate-300">
+                                                <span className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide bg-emerald-500/10 text-emerald-400">
                                                     Active
                                                 </span>
                                             )}
