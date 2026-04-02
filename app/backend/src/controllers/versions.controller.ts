@@ -379,6 +379,41 @@ export async function getVersion(req: Request, res: Response) {
     });
 }
 
+export async function deleteVersion(req: Request, res: Response) {
+    const { name, version } = req.params;
+    const userId = req.user!.id;
+
+    const pkgResult = await query(
+        "SELECT id, owner_id FROM packages WHERE name = $1",
+        [name],
+    );
+
+    if (pkgResult.rows.length === 0) {
+        res.status(404).json({ error: `Package "${name}" not found` });
+        return;
+    }
+
+    const pkg = pkgResult.rows[0];
+    if (pkg.owner_id !== userId) {
+        res.status(403).json({ error: "You do not own this package" });
+        return;
+    }
+
+    const { rowCount } = await query(
+        "DELETE FROM versions WHERE package_id = $1 AND version = $2",
+        [pkg.id, version],
+    );
+
+    if (!rowCount) {
+        res.status(404).json({
+            error: `Version ${version} of "${name}" not found`,
+        });
+        return;
+    }
+
+    res.json({ message: `Version ${version} deleted` });
+}
+
 export async function rollbackVersion(req: Request, res: Response) {
     const { name, version } = req.params;
     const ownerId = req.user!.id;
