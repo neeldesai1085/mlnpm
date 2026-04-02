@@ -1,10 +1,12 @@
 import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
 import { Link } from "react-router-dom";
+import { getUser } from "../utils/api";
 
 export default function Landing() {
     const command = "mlnpm install package-name";
     const { toast, showToast, setOpen } = useToastState();
+    const user = getUser();
 
     const handleCopy = async () => {
         try {
@@ -53,12 +55,29 @@ export default function Landing() {
                 >
                     Explore Packages
                 </Link>
-                <Link
-                    to="/register"
-                    className="px-6 py-3 text-base font-semibold text-indigo-400 border border-indigo-500/50 rounded-lg hover:bg-indigo-500/10 transition-all"
-                >
-                    Get Started
-                </Link>
+                {user ? (
+                    <>
+                        <Link
+                            to="/manage"
+                            className="px-6 py-3 text-base font-semibold text-emerald-300 border border-emerald-500/50 rounded-lg hover:bg-emerald-500/10 transition-all"
+                        >
+                            Manage Variant
+                        </Link>
+                        <Link
+                            to="/delete"
+                            className="px-6 py-3 text-base font-semibold text-red-200 border border-red-500/40 rounded-lg hover:bg-red-500/10 transition-all"
+                        >
+                            Delete Variant
+                        </Link>
+                    </>
+                ) : (
+                    <Link
+                        to="/register"
+                        className="px-6 py-3 text-base font-semibold text-indigo-400 border border-indigo-500/50 rounded-lg hover:bg-indigo-500/10 transition-all"
+                    >
+                        Get Started
+                    </Link>
+                )}
             </div>
 
             <CustomToast toast={toast} onOpenChange={setOpen} />
