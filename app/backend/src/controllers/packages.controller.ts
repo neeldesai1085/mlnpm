@@ -163,7 +163,7 @@ export async function getPackages(req: Request, res: Response) {
                     u.username AS owner
             FROM packages p JOIN users u ON u.id = p.owner_id
             WHERE p.name ILIKE $1
-            ORDER BY p.access_count DESC, p.name ASC
+                ORDER BY p.access_count DESC
             LIMIT $2`,
             [`%${search}%`, limit],
         );
@@ -175,7 +175,7 @@ export async function getPackages(req: Request, res: Response) {
         `SELECT p.id, p.name, p.description, p.documentation_md, p.created_at, p.updated_at, p.access_count,
                 u.username AS owner
         FROM packages p JOIN users u ON u.id = p.owner_id
-        ORDER BY p.access_count DESC, p.name ASC
+        ORDER BY p.access_count DESC
         LIMIT $1`,
         [limit],
     );
@@ -186,22 +186,26 @@ export async function deletePackage(req: Request, res: Response) {
     const { name } = req.params;
     const ownerId = req.user!.id;
 
-    const { rowCount } = await query(
-        "DELETE FROM packages WHERE name = $1 AND owner_id = $2",
+    const pkgResult = await query<{ id: string }>(
+        "SELECT id FROM packages WHERE name = $1 AND owner_id = $2",
         [name, ownerId],
     );
 
-    if (!rowCount) {
+    if (pkgResult.rows.length === 0) {
         res.status(404).json({
             error: `Package "${name}" not found or not owned by you`,
         });
         return;
     }
 
-    await query(
-        "UPDATE users SET packages_count = GREATEST(packages_count - 1, 0) WHERE id = $1",
-        [ownerId],
+    const pkgId = pkgResult.rows[0]!.id;
+    const { rowCount } = await query(
+        "UPDATE versions SET is_yanked = true WHERE package_id = $1 AND is_yanked = false",
+        [pkgId],
     );
 
-    res.json({ message: `Package "${name}" deleted` });
+    res.json({
+        message: `Package "${name}" yanked`,
+        yanked_versions: rowCount ?? 0,
+    });
 }
