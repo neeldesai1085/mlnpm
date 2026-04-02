@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -108,8 +108,6 @@ function formatBytes(bytes: number) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
-const LONG_UPLOAD_BYTES = 10 * 1024 * 1024;
-
 type ParsedVersion = {
     major: number;
     minor: number;
@@ -188,9 +186,10 @@ export default function Upload() {
     const [description, setDescription] = useState("");
     const [documentation, setDocumentation] = useState("");
     const [showPreview, setShowPreview] = useState(false);
-    const [files, setFiles] = useState<File[]>([]);
+    const [accepted, setAccepted] = useState<File[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [isDragging, setIsDragging] = useState(false);
     const [packageLookup, setPackageLookup] = useState<PackageLookup>({
         exists: false,
@@ -198,11 +197,49 @@ export default function Upload() {
         loading: false,
     });
 
+    const activeXhrsRef = useRef<XMLHttpRequest[]>([]);
+    const uploadedBytesRef = useRef<Record<string, number>>({});
+
     const user = useMemo(() => getUser(), []);
+    const isBlocking = isSubmitting || isUploading;
 
     const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const selected = Array.from(event.target.files ?? []);
-        setFiles(selected);
+
+        const validFiles = selected.filter((file) =>
+            file.name.toLowerCase().endsWith(".onnx"),
+        );
+
+        if (validFiles.length !== selected.length) {
+            showToast({
+                title: "Invalid file",
+                message: "Only .onnx files are accepted.",
+                variant: "error",
+            });
+        }
+
+        if (validFiles.length > 0) {
+            setAccepted((prev) => {
+                const newFiles = validFiles.filter(
+                    (newFile) =>
+                        !prev.some(
+                            (prevFile) => prevFile.name === newFile.name,
+                        ),
+                );
+
+                if (newFiles.length !== validFiles.length) {
+                    showToast({
+                        title: "Duplicate file",
+                        message: "This file has already been added.",
+                        variant: "error",
+                    });
+                }
+
+                return [...prev, ...newFiles];
+            });
+        }
+
+        event.target.value = "";
     };
 
     const handleDrop = (event: React.DragEvent<HTMLLabelElement>) => {
@@ -214,28 +251,104 @@ export default function Upload() {
             return;
         }
 
-        const accepted = dropped.filter((file) =>
+        const validFiles = dropped.filter((file) =>
             file.name.toLowerCase().endsWith(".onnx"),
         );
-        if (accepted.length !== dropped.length) {
+
+        if (validFiles.length !== dropped.length) {
             showToast({
                 title: "Invalid file",
                 message: "Only .onnx files are accepted.",
                 variant: "error",
             });
         }
-        if (accepted.length > 0) {
-            setFiles(accepted);
+
+        if (validFiles.length > 0) {
+            setAccepted((prev) => {
+                const newFiles = validFiles.filter(
+                    (newFile) =>
+                        !prev.some(
+                            (prevFile) => prevFile.name === newFile.name,
+                        ),
+                );
+
+                if (newFiles.length !== validFiles.length) {
+                    showToast({
+                        title: "Duplicate file",
+                        message: "This file has already been added.",
+                        variant: "error",
+                    });
+                }
+
+                return [...prev, ...newFiles];
+            });
         }
     };
 
     const handleRemoveFile = (name: string) => {
-        setFiles((current) => current.filter((file) => file.name !== name));
+        setAccepted((current) => current.filter((file) => file.name !== name));
     };
 
+    const handleCancelUpload = () => {
+        if (!isUploading) return;
+        activeXhrsRef.current.forEach((xhr) => xhr.abort());
+        activeXhrsRef.current = [];
+        uploadedBytesRef.current = {};
+        setUploadProgress(0);
+        setIsUploading(false);
+        setIsSubmitting(false);
+        setAccepted([]);
+        showToast({
+            title: "Upload canceled",
+            message: "The upload was stopped.",
+            variant: "error",
+        });
+    };
+
+    const uploadFileWithProgress = (
+        file: File,
+        uploadUrl: string,
+        totalBytes: number,
+    ) =>
+        new Promise<void>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            activeXhrsRef.current.push(xhr);
+
+            xhr.upload.onprogress = (event) => {
+                if (!event.lengthComputable) return;
+                uploadedBytesRef.current[file.name] = event.loaded;
+                const uploadedBytes = Object.values(
+                    uploadedBytesRef.current,
+                ).reduce((acc, value) => acc + value, 0);
+                const pct = totalBytes
+                    ? Math.min(
+                          100,
+                          Math.round((uploadedBytes / totalBytes) * 100),
+                      )
+                    : 0;
+                setUploadProgress(pct);
+            };
+
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState !== XMLHttpRequest.DONE) return;
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    return resolve();
+                }
+                return reject(new Error(`Upload failed for ${file.name}`));
+            };
+
+            xhr.onerror = () =>
+                reject(new Error(`Upload failed for ${file.name}`));
+            xhr.onabort = () =>
+                reject(new DOMException("Upload aborted", "AbortError"));
+
+            xhr.open("PUT", uploadUrl);
+            xhr.send(file);
+        });
+
     const fileList: UploadFile[] = useMemo(
-        () => files.map((file) => ({ name: file.name, size: file.size })),
-        [files],
+        () => accepted.map((file) => ({ name: file.name, size: file.size })),
+        [accepted],
     );
 
     useEffect(() => {
@@ -396,7 +509,7 @@ export default function Upload() {
             return;
         }
 
-        if (files.length === 0) {
+        if (accepted.length === 0) {
             showToast({
                 title: "Missing files",
                 message: "Please select at least one .onnx file.",
@@ -405,11 +518,9 @@ export default function Upload() {
             return;
         }
 
+        let shouldCleanupVersion = false;
         try {
             setIsSubmitting(true);
-            const totalBytes = files.reduce((acc, file) => acc + file.size, 0);
-            const shouldShowProgress = totalBytes >= LONG_UPLOAD_BYTES;
-            setUploadProgress(shouldShowProgress ? 0 : null);
 
             if (isNewPackage) {
                 await api("/packages", {
@@ -438,37 +549,37 @@ export default function Upload() {
                 }),
             })) as { files?: { name: string; upload_url: string }[] };
 
+            shouldCleanupVersion = true;
+
             const uploadTargets: { name: string; upload_url: string }[] =
                 publish.files ?? [];
 
-            const totalFiles = uploadTargets.length || 1;
-            let completed = 0;
-            let hadNetworkError = false;
+            const totalBytes = accepted.reduce(
+                (acc, file) => acc + file.size,
+                0,
+            );
+            activeXhrsRef.current = [];
+            uploadedBytesRef.current = {};
+            setUploadProgress(0);
+            setIsUploading(true);
             for (const target of uploadTargets) {
-                const file = files.find((item) => item.name === target.name);
+                const file = accepted.find((item) => item.name === target.name);
                 if (!file) continue;
                 try {
-                    const res = await fetch(target.upload_url, {
-                        method: "PUT",
-                        body: file,
-                        headers: {
-                            "Content-Type":
-                                file.type || "application/octet-stream",
-                        },
-                    });
-                    if (!res.ok) {
-                        throw new Error(`Upload failed for ${target.name}`);
-                    }
-                    completed += 1;
-                    if (shouldShowProgress) {
-                        setUploadProgress(
-                            Math.round((completed / totalFiles) * 100),
-                        );
-                    }
+                    await uploadFileWithProgress(
+                        file,
+                        target.upload_url,
+                        totalBytes,
+                    );
                 } catch (err) {
+                    if (
+                        err instanceof DOMException &&
+                        err.name === "AbortError"
+                    ) {
+                        return;
+                    }
                     if (err instanceof TypeError) {
-                        hadNetworkError = true;
-                        continue;
+                        throw err;
                     }
                     throw new Error(
                         err instanceof Error
@@ -478,19 +589,36 @@ export default function Upload() {
                 }
             }
 
-            setUploadProgress(null);
+            setIsUploading(false);
+            activeXhrsRef.current = [];
+            uploadedBytesRef.current = {};
+            setUploadProgress(100);
             showToast({
                 title: "Upload complete",
-                message: hadNetworkError
-                    ? "Published, but some uploads may still be processing."
-                    : "Your package has been published.",
+                message: "Your package has been published.",
                 variant: "success",
                 durationMs: 1200,
             });
+            setAccepted([]);
             window.setTimeout(() => {
                 navigate(`/packages/${name.trim()}`);
             }, 1300);
         } catch (err: unknown) {
+            if (shouldCleanupVersion) {
+                try {
+                    await api(
+                        `/packages/${name.trim()}/versions/${version.trim()}`,
+                        { method: "DELETE" },
+                    );
+                } catch {
+                    showToast({
+                        title: "Cleanup failed",
+                        message:
+                            "Version was created but could not be removed.",
+                        variant: "error",
+                    });
+                }
+            }
             showToast({
                 title: "Upload failed",
                 message: err instanceof Error ? err.message : "Upload failed",
@@ -498,7 +626,9 @@ export default function Upload() {
             });
         } finally {
             setIsSubmitting(false);
-            setUploadProgress(null);
+            setIsUploading(false);
+            activeXhrsRef.current = [];
+            uploadedBytesRef.current = {};
         }
     };
 
@@ -517,6 +647,7 @@ export default function Upload() {
             <form
                 onSubmit={handleSubmit}
                 className="grid items-stretch lg:grid-cols-[1.2fr_1fr] gap-8"
+                aria-busy={isBlocking}
             >
                 <div className="space-y-6 h-full">
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
@@ -562,6 +693,7 @@ export default function Upload() {
                                     }
                                     placeholder="e.g. vision-encoder"
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    disabled={isBlocking}
                                     required
                                 />
                             </div>
@@ -577,6 +709,7 @@ export default function Upload() {
                                     placeholder="1.0.0"
                                     disabled={isNewPackage}
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    readOnly={isBlocking}
                                     required
                                 />
                                 <p className="mt-2 text-xs text-slate-500">
@@ -601,6 +734,7 @@ export default function Upload() {
                                     }
                                     placeholder="One-line summary for Explore"
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    disabled={isBlocking}
                                     required={isNewPackage}
                                 />
                             </div>
@@ -629,10 +763,14 @@ export default function Upload() {
                                 accept=".onnx"
                                 multiple
                                 onChange={onFileChange}
+                                onClick={(event) => {
+                                    (event.target as HTMLInputElement).value =
+                                        "";
+                                }}
+                                disabled={isBlocking}
                                 className="hidden"
                             />
-                            {files.length === 0 &&
-                            !(isSubmitting && uploadProgress !== null) ? (
+                            {!isBlocking ? (
                                 <>
                                     <span className="text-sm font-semibold text-slate-200">
                                         Drag & drop ONNX files or click to
@@ -642,21 +780,6 @@ export default function Upload() {
                                         Only .onnx files are accepted
                                     </span>
                                 </>
-                            ) : null}
-                            {isSubmitting && uploadProgress !== null ? (
-                                <div className="absolute inset-x-6 bottom-6">
-                                    <div className="h-1.5 w-full rounded-full bg-slate-800">
-                                        <div
-                                            className="h-1.5 rounded-full bg-indigo-500 transition-all"
-                                            style={{
-                                                width: `${uploadProgress}%`,
-                                            }}
-                                        />
-                                    </div>
-                                    <div className="mt-2 text-xs text-slate-400">
-                                        Uploading {uploadProgress}%
-                                    </div>
-                                </div>
                             ) : null}
                         </label>
                         {fileList.length > 0 ? (
@@ -717,20 +840,27 @@ export default function Upload() {
                                 }
                                 placeholder="Write detailed usage notes, model specs, input/output formats, and examples..."
                                 className="min-h-60 w-full flex-1 resize-none rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                disabled={isBlocking}
                                 required={isNewPackage}
                             />
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                        {isSubmitting ? "Uploading..." : "Publish package"}
-                    </button>
+                    {!isUploading ? (
+                        <button
+                            type="submit"
+                            disabled={isSubmitting}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+                        >
+                            {isSubmitting ? "Submitting..." : "Publish package"}
+                        </button>
+                    ) : null}
                 </div>
             </form>
+
+            {isUploading ? (
+                <div className="fixed inset-0 z-40 cursor-not-allowed bg-slate-950/40 backdrop-blur-sm" />
+            ) : null}
 
             {showPreview ? (
                 <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
@@ -754,6 +884,36 @@ export default function Upload() {
                 </div>
             ) : null}
 
+            {isUploading ? (
+                <div className="fixed bottom-6 left-1/2 z-50 w-[min(680px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border border-slate-800 bg-slate-950/90 p-4 shadow-xl backdrop-blur">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-sm font-semibold text-slate-100">
+                                Uploading to Cloudflare R2...
+                            </p>
+                            <p className="text-xs text-slate-400">
+                                Please keep this tab open.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleCancelUpload}
+                            className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20"
+                        >
+                            Cancel upload
+                        </button>
+                    </div>
+                    <div className="mt-3 h-1.5 w-full rounded-full bg-slate-800">
+                        <div
+                            className="h-1.5 rounded-full bg-indigo-500 transition-all"
+                            style={{ width: `${uploadProgress}%` }}
+                        />
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">
+                        {uploadProgress}% complete
+                    </p>
+                </div>
+            ) : null}
             <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
