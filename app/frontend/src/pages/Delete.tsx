@@ -141,8 +141,8 @@ export default function Delete() {
                 method: "DELETE",
             });
             showToast({
-                title: "Model deleted",
-                message: "The model and its versions were removed.",
+                title: "Model yanked",
+                message: "All versions were marked inactive.",
                 variant: "success",
             });
             setPackageToDelete("");
@@ -228,10 +228,10 @@ export default function Delete() {
                     className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6"
                 >
                     <h2 className="text-lg font-semibold text-white mb-2">
-                        Delete a Model
+                        Yank a Model
                     </h2>
                     <p className="text-sm text-slate-400 mb-5">
-                        Permanently remove a model and all its versions.
+                        Mark all versions as inactive without deleting data.
                     </p>
                     <label className="block text-sm font-medium text-slate-400 mb-2">
                         Package name
@@ -261,7 +261,7 @@ export default function Delete() {
                         disabled={isDeleting}
                         className="mt-6 w-full rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-200 hover:bg-red-500/20 transition-colors disabled:opacity-60"
                     >
-                        {isDeleting ? "Deleting..." : "Delete Model"}
+                        {isDeleting ? "Yanking..." : "Yank Model"}
                     </button>
                 </form>
 
