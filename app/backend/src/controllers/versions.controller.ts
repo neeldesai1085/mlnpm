@@ -1,9 +1,12 @@
 import type { Request, Response } from "express";
+import { createHash } from "node:crypto";
+import type { Readable } from "node:stream";
 import { z } from "zod";
 import { pool, query } from "../db/client.js";
 import {
     generateUploadUrl,
     generateDownloadUrl,
+    getObjectStream,
 } from "../services/r2.service.js";
 
 const publishVersionSchema = z
@@ -15,7 +18,6 @@ const publishVersionSchema = z
                 "Must follow semver (e.g., 1.0.0)",
             ),
         onnx_file_size: z.coerce.number().int().positive().optional(),
-        onnx_file_hash: z.string().optional(),
         onnx_file_name: z
             .string()
             .min(1)
@@ -134,6 +136,17 @@ function isAllowedNextVersion(latest: string, next: string): boolean {
     );
 }
 
+async function hashStream(stream: Readable): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const hasher = createHash("sha256");
+        stream.on("data", (chunk) => {
+            hasher.update(chunk as Buffer);
+        });
+        stream.on("error", reject);
+        stream.on("end", () => resolve(hasher.digest("hex")));
+    });
+}
+
 export async function publishVersion(req: Request, res: Response) {
     const { name } = req.params;
     const userId = req.user!.id;
@@ -146,13 +159,7 @@ export async function publishVersion(req: Request, res: Response) {
         return;
     }
 
-    const {
-        version,
-        onnx_file_size,
-        onnx_file_hash,
-        onnx_file_name,
-        metadata,
-    } = parsed.data;
+    const { version, onnx_file_size, onnx_file_name, metadata } = parsed.data;
 
     const pkgResult = await query(
         "SELECT id, owner_id FROM packages WHERE name = $1",
@@ -218,7 +225,7 @@ export async function publishVersion(req: Request, res: Response) {
                           sanitizeFileName(onnx_file_name ?? "model.onnx"),
                       ),
                       size: onnx_file_size!,
-                      hash: onnx_file_hash ?? null,
+                      hash: null,
                   },
               ];
     } catch (err) {
@@ -247,16 +254,9 @@ export async function publishVersion(req: Request, res: Response) {
         await client.query("BEGIN");
 
         const { rows } = await client.query<{ id: string }>(
-            `INSERT INTO versions (package_id, version, onnx_file_key, onnx_file_size, onnx_file_hash, metadata)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-            [
-                pkg.id,
-                version,
-                primaryKey,
-                totalSize,
-                files.length === 1 ? files[0]!.hash : null,
-                metadata,
-            ],
+            `INSERT INTO versions (package_id, version, onnx_file_key, onnx_file_size, metadata)
+            VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [pkg.id, version, primaryKey, totalSize, metadata],
         );
 
         const versionId = rows[0]!.id;
@@ -306,7 +306,7 @@ export async function getVersion(req: Request, res: Response) {
 
     const result = await query(
         `SELECT v.id, v.version, v.onnx_file_key, v.onnx_file_size,
-                v.onnx_file_hash, v.metadata, v.is_yanked, v.created_at
+                v.metadata, v.is_yanked, v.created_at
         FROM versions v JOIN packages p ON p.id = v.package_id
         WHERE p.name = $1 AND v.version = $2`,
         [name, version],
@@ -350,7 +350,7 @@ export async function getVersion(req: Request, res: Response) {
                             ver.onnx_file_key.split("/").pop() ?? "model.onnx",
                         file_key: ver.onnx_file_key,
                         file_size: ver.onnx_file_size,
-                        file_hash: ver.onnx_file_hash ?? null,
+                        file_hash: null,
                     },
                 ]
               : [];
@@ -371,11 +371,98 @@ export async function getVersion(req: Request, res: Response) {
             id: ver.id,
             version: ver.version,
             onnx_file_size: ver.onnx_file_size,
-            onnx_file_hash: ver.onnx_file_hash,
             metadata: ver.metadata,
             created_at: ver.created_at,
         },
         files: downloadFiles,
+    });
+}
+
+export async function verifyVersion(req: Request, res: Response) {
+    const { name, version } = req.params;
+    const userId = req.user!.id;
+
+    const pkgResult = await query(
+        "SELECT id, owner_id FROM packages WHERE name = $1",
+        [name],
+    );
+
+    if (pkgResult.rows.length === 0) {
+        res.status(404).json({ error: `Package "${name}" not found` });
+        return;
+    }
+
+    const pkg = pkgResult.rows[0];
+    if (pkg.owner_id !== userId) {
+        res.status(403).json({ error: "You do not own this package" });
+        return;
+    }
+
+    const versionResult = await query<{ id: string }>(
+        "SELECT id FROM versions WHERE package_id = $1 AND version = $2",
+        [pkg.id, version],
+    );
+
+    if (versionResult.rows.length === 0) {
+        res.status(404).json({
+            error: `Version ${version} of "${name}" not found`,
+        });
+        return;
+    }
+
+    const verId = versionResult.rows[0]!.id;
+    const filesResult = await query<{
+        file_name: string;
+        file_key: string;
+        file_hash: string | null;
+    }>(
+        `SELECT file_name, file_key, file_hash
+        FROM version_files WHERE version_id = $1
+        ORDER BY file_name ASC`,
+        [verId],
+    );
+
+    if (filesResult.rows.length === 0) {
+        res.status(404).json({
+            error: `No files found for version ${version} of "${name}"`,
+        });
+        return;
+    }
+
+    const missingHashes = filesResult.rows.filter((file) => !file.file_hash);
+    if (missingHashes.length > 0) {
+        res.status(400).json({
+            error: "Missing file hashes for verification",
+            files: missingHashes.map((file) => file.file_name),
+        });
+        return;
+    }
+
+    const mismatches: { name: string; expected: string; actual: string }[] = [];
+    for (const file of filesResult.rows) {
+        const stream = await getObjectStream(file.file_key);
+        const actual = await hashStream(stream);
+        const expected = file.file_hash!.toLowerCase();
+        if (actual.toLowerCase() !== expected) {
+            mismatches.push({
+                name: file.file_name,
+                expected,
+                actual,
+            });
+        }
+    }
+
+    if (mismatches.length > 0) {
+        res.status(409).json({
+            error: "Hash verification failed",
+            mismatches,
+        });
+        return;
+    }
+
+    res.json({
+        message: "Version verified",
+        verified_files: filesResult.rows.length,
     });
 }
 
