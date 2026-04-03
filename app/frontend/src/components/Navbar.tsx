@@ -108,7 +108,7 @@ function Navbar({
                                                 Profile
                                             </Link>
                                             <Link
-                                                to="/upload"
+                                                to="/manage"
                                                 className="block rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
                                                 onClick={() =>
                                                     setAvatarOpen(false)
@@ -186,7 +186,7 @@ function Navbar({
                             {isAuthenticated ? (
                                 <>
                                     <Link
-                                        to="/upload"
+                                        to="/manage"
                                         className="text-sm font-medium text-slate-300"
                                         onClick={() => setMenuOpen(false)}
                                     >
@@ -237,7 +237,7 @@ function Navbar({
                                                     Profile
                                                 </Link>
                                                 <Link
-                                                    to="/upload"
+                                                    to="/manage"
                                                     className="rounded-lg px-3 py-2 text-sm text-slate-200 hover:bg-slate-900"
                                                     onClick={() => {
                                                         setAvatarOpen(false);

@@ -39,7 +39,7 @@ export default function App() {
                 />
                 <Route path="/forgot" element={<ForgotPassword />} />
                 <Route path="/explore" element={<Explore />} />
-                <Route path="/upload" element={<Upload />} />
+                <Route path="/manage" element={<Upload />} />
                 <Route path="/delete" element={<Delete />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/packages/:name" element={<Package />} />
