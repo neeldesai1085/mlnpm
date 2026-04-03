@@ -651,7 +651,13 @@ export default function Upload() {
             }
             showToast({
                 title: "Upload failed",
-                message: err instanceof Error ? err.message : "Upload failed",
+                message:
+                    err instanceof Error &&
+                    err.message.toLowerCase().includes("hash verification")
+                        ? "Upload completed, but verification failed. Please re-upload the files."
+                        : err instanceof Error
+                          ? err.message
+                          : "Upload failed",
                 variant: "error",
             });
         } finally {
