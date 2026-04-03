@@ -144,12 +144,14 @@ export default function Delete() {
                 title: "Model yanked",
                 message: "All versions were marked inactive.",
                 variant: "success",
+                durationMs: 1200,
             });
+            const targetName = packageToDelete.trim();
             setPackageToDelete("");
             setConfirmDelete(false);
             window.setTimeout(() => {
-                navigate("/explore");
-            }, 800);
+                navigate(`/packages/${targetName}`);
+            }, 1300);
         } catch (err) {
             showToast({
                 title: "Delete failed",
@@ -197,9 +199,14 @@ export default function Delete() {
                 title: "Version rolled back",
                 message: "The version is now inactive.",
                 variant: "success",
+                durationMs: 1200,
             });
+            const targetName = rollbackPackage.trim();
             setRollbackPackage("");
             setRollbackVersion("");
+            window.setTimeout(() => {
+                navigate(`/packages/${targetName}`);
+            }, 1300);
         } catch (err) {
             showToast({
                 title: "Rollback failed",

@@ -293,7 +293,7 @@ export default function Profile() {
                     <button
                         type="submit"
                         disabled={isSaving}
-                        className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:bg-indigo-500 disabled:opacity-60"
+                        className="cursor-pointer rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:bg-indigo-500 disabled:opacity-60"
                     >
                         {isSaving ? "Saving..." : "Save profile"}
                     </button>

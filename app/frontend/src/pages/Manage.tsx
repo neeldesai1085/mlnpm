@@ -826,7 +826,7 @@ export default function Upload() {
                                     onClick={() =>
                                         setShowPreview((current) => !current)
                                     }
-                                    className="text-xs font-semibold text-indigo-300 hover:text-indigo-200"
+                                    className="cursor-pointer text-xs font-semibold text-indigo-300 hover:text-indigo-200"
                                 >
                                     {showPreview
                                         ? "Hide preview"
