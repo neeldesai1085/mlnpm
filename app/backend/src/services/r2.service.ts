@@ -2,6 +2,7 @@ import {
     S3Client,
     PutObjectCommand,
     GetObjectCommand,
+    DeleteObjectCommand,
 } from "@aws-sdk/client-s3";
 import type { Readable } from "node:stream";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -49,4 +50,17 @@ export async function getObjectStream(key: string): Promise<Readable> {
         throw new Error("Missing object body");
     }
     return body as Readable;
+}
+
+export async function deleteObjects(keys: string[]): Promise<void> {
+    await Promise.all(
+        keys.map((key) =>
+            s3.send(
+                new DeleteObjectCommand({
+                    Bucket: env.R2_BUCKET_NAME,
+                    Key: key,
+                }),
+            ),
+        ),
+    );
 }

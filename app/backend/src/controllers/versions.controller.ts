@@ -7,6 +7,7 @@ import {
     generateUploadUrl,
     generateDownloadUrl,
     getObjectStream,
+    deleteObjects,
 } from "../services/r2.service.js";
 
 const publishVersionSchema = z
@@ -484,6 +485,25 @@ export async function deleteVersion(req: Request, res: Response) {
     if (pkg.owner_id !== userId) {
         res.status(403).json({ error: "You do not own this package" });
         return;
+    }
+
+    const filesResult = await query<{ file_key: string }>(
+        `SELECT file_key FROM version_files
+        WHERE package_id = $1 AND version_id = (
+            SELECT id FROM versions WHERE package_id = $1 AND version = $2
+        )`,
+        [pkg.id, version],
+    );
+
+    if (filesResult.rows.length > 0) {
+        try {
+            await deleteObjects(filesResult.rows.map((row) => row.file_key));
+        } catch (err) {
+            res.status(502).json({
+                error: "Failed to delete files from storage",
+            });
+            return;
+        }
     }
 
     const { rowCount } = await query(
