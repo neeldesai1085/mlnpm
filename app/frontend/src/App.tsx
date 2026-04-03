@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { getUser, clearAuth } from "./utils/api";
+import { getUser, clearAuth, getTokenExpiryMs } from "./utils/api";
 import type { User } from "./utils/api";
 
 import Navbar from "./components/Navbar";
@@ -23,6 +23,32 @@ export default function App() {
         clearAuth();
         setUser(null);
     };
+
+    useEffect(() => {
+        const token = localStorage.getItem("mlnpm_token");
+        if (!token) {
+            return;
+        }
+
+        const expiryMs = getTokenExpiryMs(token);
+        if (!expiryMs) {
+            const timeoutId = window.setTimeout(() => {
+                handleLogout();
+            }, 0);
+            return () => {
+                window.clearTimeout(timeoutId);
+            };
+        }
+
+        const delayMs = Math.max(expiryMs - Date.now(), 0);
+        const timeoutId = window.setTimeout(() => {
+            handleLogout();
+        }, delayMs);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [user]);
 
     return (
         <BrowserRouter>

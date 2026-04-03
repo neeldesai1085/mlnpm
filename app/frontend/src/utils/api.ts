@@ -5,10 +5,10 @@ export interface User {
     username: string;
 }
 
-function isTokenExpired(token: string): boolean {
+export function getTokenExpiryMs(token: string): number | null {
     const parts = token.split(".");
     if (parts.length !== 3) {
-        return true;
+        return null;
     }
     try {
         const payloadBase64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
@@ -18,12 +18,20 @@ function isTokenExpired(token: string): boolean {
         );
         const payload = JSON.parse(atob(padded)) as { exp?: number };
         if (!payload.exp) {
-            return true;
+            return null;
         }
-        return payload.exp * 1000 <= Date.now();
+        return payload.exp * 1000;
     } catch {
+        return null;
+    }
+}
+
+function isTokenExpired(token: string): boolean {
+    const expiryMs = getTokenExpiryMs(token);
+    if (!expiryMs) {
         return true;
     }
+    return expiryMs <= Date.now();
 }
 
 export function getToken() {
@@ -48,7 +56,16 @@ export function getUser(): User | null {
         return null;
     }
     const raw = localStorage.getItem("mlnpm_user");
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) {
+        clearAuth();
+        return null;
+    }
+    try {
+        return JSON.parse(raw) as User;
+    } catch {
+        clearAuth();
+        return null;
+    }
 }
 
 export function clearAuth() {
