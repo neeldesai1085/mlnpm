@@ -36,7 +36,6 @@ CREATE TABLE IF NOT EXISTS versions (
     version VARCHAR(32) NOT NULL,
     onnx_file_key VARCHAR(512) NOT NULL,
     onnx_file_size BIGINT NOT NULL DEFAULT 0,
-    onnx_file_hash VARCHAR(128) DEFAULT NULL,
     metadata JSONB DEFAULT '{}',
     is_yanked BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
