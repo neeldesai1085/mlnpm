@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS version_files (
     file_key VARCHAR(512) NOT NULL,
     file_size BIGINT NOT NULL DEFAULT 0,
     file_hash VARCHAR(128) DEFAULT NULL,
+    file_type VARCHAR(32) NOT NULL DEFAULT 'model',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_version_file_name UNIQUE (version_id, file_name),
     CONSTRAINT fk_version_files_package_id
@@ -15,3 +16,4 @@ CREATE TABLE IF NOT EXISTS version_files (
 
 CREATE INDEX IF NOT EXISTS idx_version_files_version_id ON version_files (version_id);
 CREATE INDEX IF NOT EXISTS idx_version_files_package_id ON version_files (package_id);
+CREATE INDEX IF NOT EXISTS idx_version_files_file_type ON version_files (file_type);
