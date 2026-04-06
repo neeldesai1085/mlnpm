@@ -1004,29 +1004,42 @@ export default function Upload() {
                                             <span className="text-xs text-slate-500">
                                                 {formatBytes(file.size)}
                                             </span>
-                                            <select
-                                                value={file.file_type}
-                                                onChange={(event) =>
-                                                    handleFileTypeChange(
-                                                        file.name,
-                                                        event.target.value as
-                                                            | "model"
-                                                            | "wrapper",
-                                                    )
-                                                }
-                                                className={`cursor-pointer appearance-none rounded-full px-3 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
-                                                    file.file_type === "model"
-                                                        ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25"
-                                                        : "bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/25"
-                                                }`}
-                                            >
-                                                <option value="model">
+                                            <div className="inline-flex rounded-full bg-slate-950 p-0.5 ring-1 ring-slate-800">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleFileTypeChange(
+                                                            file.name,
+                                                            "model",
+                                                        )
+                                                    }
+                                                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-all ${
+                                                        file.file_type ===
+                                                        "model"
+                                                            ? "bg-emerald-500/20 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.15)]"
+                                                            : "text-slate-500 hover:text-slate-300"
+                                                    }`}
+                                                >
                                                     Model
-                                                </option>
-                                                <option value="wrapper">
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        handleFileTypeChange(
+                                                            file.name,
+                                                            "wrapper",
+                                                        )
+                                                    }
+                                                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-all ${
+                                                        file.file_type ===
+                                                        "wrapper"
+                                                            ? "bg-violet-500/20 text-violet-300 shadow-[0_0_8px_rgba(139,92,246,0.15)]"
+                                                            : "text-slate-500 hover:text-slate-300"
+                                                    }`}
+                                                >
                                                     Wrapper
-                                                </option>
-                                            </select>
+                                                </button>
+                                            </div>
                                             <button
                                                 type="button"
                                                 onClick={() =>
