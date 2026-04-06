@@ -32,6 +32,7 @@ const publishVersionSchema = z
                     name: z.string().min(1).max(255),
                     size: z.coerce.number().int().positive(),
                     hash: z.string().optional(),
+                    file_type: z.enum(["model", "wrapper"]).optional().default("model"),
                 }),
             )
             .min(1)
@@ -212,23 +213,16 @@ export async function publishVersion(req: Request, res: Response) {
         return;
     }
 
-    let files: { name: string; size: number; hash: string | null }[] = [];
+    let files: { name: string; size: number; hash: string | null; file_type: string }[] = [];
     try {
-        files = parsed.data.files?.length
-            ? parsed.data.files.map((file) => ({
-                  name: ensureOnnxFile(sanitizeFileName(file.name)),
-                  size: file.size,
-                  hash: file.hash ?? null,
-              }))
-            : [
-                  {
-                      name: ensureOnnxFile(
-                          sanitizeFileName(onnx_file_name ?? "model.onnx"),
-                      ),
-                      size: onnx_file_size!,
-                      hash: null,
-                  },
-              ];
+        files = parsed.data.files?.map((file) => ({
+                name: file.file_type === "wrapper"
+                    ? sanitizeFileName(file.name)
+                    : ensureOnnxFile(sanitizeFileName(file.name)),
+                size: file.size,
+                hash: file.hash ?? null,
+                file_type: file.file_type ?? "model",
+            })) ?? [];
     } catch (err) {
         res.status(400).json({
             error: err instanceof Error ? err.message : "Invalid file name",
@@ -264,9 +258,9 @@ export async function publishVersion(req: Request, res: Response) {
         for (const file of files) {
             const fileKey = `packages/${name}/${version}/${file.name}`;
             await client.query(
-                `INSERT INTO version_files (version_id, package_id, file_name, file_key, file_size, file_hash)
-                VALUES ($1, $2, $3, $4, $5, $6)`,
-                [versionId, pkg.id, file.name, fileKey, file.size, file.hash],
+                `INSERT INTO version_files (version_id, package_id, file_name, file_key, file_size, file_hash, file_type)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                [versionId, pkg.id, file.name, fileKey, file.size, file.hash, file.file_type],
             );
         }
 
