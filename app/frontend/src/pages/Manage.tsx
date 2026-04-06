@@ -6,6 +6,8 @@ import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createSHA256 } from "hash-wasm";
 import CustomToast from "../components/CustomToast";
+import PublishReview from "../components/PublishReview";
+import type { ReviewFile } from "../components/PublishReview";
 import { useToastState } from "../hooks/useToastState";
 import { api, getUser } from "../utils/api";
 
@@ -13,7 +15,19 @@ type UploadFile = {
     name: string;
     size: number;
     hash?: string;
+    file_type: "model" | "wrapper";
 };
+
+const ALLOWED_EXTENSIONS = [".onnx", ".js", ".mjs", ".ts", ".cjs"];
+
+function detectFileType(fileName: string): "model" | "wrapper" {
+    return fileName.toLowerCase().endsWith(".onnx") ? "model" : "wrapper";
+}
+
+function isAllowedFile(fileName: string): boolean {
+    const lower = fileName.toLowerCase();
+    return ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
 
 type PackageLookup = {
     exists: boolean;
@@ -197,6 +211,7 @@ function isAllowedNextVersion(latest: string, next: string): boolean {
 export default function Upload() {
     const navigate = useNavigate();
     const { toast, showToast, setOpen } = useToastState();
+    const [step, setStep] = useState<1 | 2>(1);
     const [isNewPackage, setIsNewPackage] = useState(true);
     const [name, setName] = useState("");
     const [version, setVersion] = useState("");
@@ -204,6 +219,7 @@ export default function Upload() {
     const [documentation, setDocumentation] = useState("");
     const [showPreview, setShowPreview] = useState(false);
     const [accepted, setAccepted] = useState<File[]>([]);
+    const [fileTypes, setFileTypes] = useState<Record<string, "model" | "wrapper">>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -218,24 +234,36 @@ export default function Upload() {
     const uploadedBytesRef = useRef<Record<string, number>>({});
 
     const displayFiles = useMemo(
-        () => accepted.map((file) => ({ name: file.name, size: file.size })),
-        [accepted],
+        () =>
+            accepted.map((file) => ({
+                name: file.name,
+                size: file.size,
+                file_type: fileTypes[file.name] ?? detectFileType(file.name),
+            })),
+        [accepted, fileTypes],
+    );
+
+    const reviewFiles: ReviewFile[] = useMemo(
+        () =>
+            accepted.map((file) => ({
+                name: file.name,
+                size: file.size,
+                file_type: fileTypes[file.name] ?? detectFileType(file.name),
+            })),
+        [accepted, fileTypes],
     );
 
     const user = useMemo(() => getUser(), []);
-    const isBlocking = isSubmitting || isUploading;
 
     const onFileChange = (event: ChangeEvent<HTMLInputElement>) => {
         const selected = Array.from(event.target.files ?? []);
 
-        const validFiles = selected.filter((file) =>
-            file.name.toLowerCase().endsWith(".onnx"),
-        );
+        const validFiles = selected.filter((file) => isAllowedFile(file.name));
 
         if (validFiles.length !== selected.length) {
             showToast({
                 title: "Invalid file",
-                message: "Only .onnx files are accepted.",
+                message: `Only ${ALLOWED_EXTENSIONS.join(", ")} files are accepted.`,
                 variant: "error",
             });
         }
@@ -256,6 +284,16 @@ export default function Upload() {
                         variant: "error",
                     });
                 }
+
+                setFileTypes((prev) => {
+                    const next = { ...prev };
+                    for (const f of newFiles) {
+                        if (!(f.name in next)) {
+                            next[f.name] = detectFileType(f.name);
+                        }
+                    }
+                    return next;
+                });
 
                 return [...prev, ...newFiles];
             });
@@ -273,14 +311,12 @@ export default function Upload() {
             return;
         }
 
-        const validFiles = dropped.filter((file) =>
-            file.name.toLowerCase().endsWith(".onnx"),
-        );
+        const validFiles = dropped.filter((file) => isAllowedFile(file.name));
 
         if (validFiles.length !== dropped.length) {
             showToast({
                 title: "Invalid file",
-                message: "Only .onnx files are accepted.",
+                message: `Only ${ALLOWED_EXTENSIONS.join(", ")} files are accepted.`,
                 variant: "error",
             });
         }
@@ -302,13 +338,32 @@ export default function Upload() {
                     });
                 }
 
+                setFileTypes((prev) => {
+                    const next = { ...prev };
+                    for (const f of newFiles) {
+                        if (!(f.name in next)) {
+                            next[f.name] = detectFileType(f.name);
+                        }
+                    }
+                    return next;
+                });
+
                 return [...prev, ...newFiles];
             });
         }
     };
 
-    const handleRemoveFile = (name: string) => {
-        setAccepted((current) => current.filter((file) => file.name !== name));
+    const handleRemoveFile = (fileName: string) => {
+        setAccepted((current) => current.filter((file) => file.name !== fileName));
+        setFileTypes((prev) => {
+            const next = { ...prev };
+            delete next[fileName];
+            return next;
+        });
+    };
+
+    const handleFileTypeChange = (fileName: string, newType: "model" | "wrapper") => {
+        setFileTypes((prev) => ({ ...prev, [fileName]: newType }));
     };
 
     const handleCancelUpload = () => {
@@ -529,7 +584,7 @@ export default function Upload() {
         if (accepted.length === 0) {
             showToast({
                 title: "Missing files",
-                message: "Please select at least one .onnx file.",
+                message: "Please select at least one file.",
                 variant: "error",
             });
             return;
@@ -563,6 +618,7 @@ export default function Upload() {
                     name: file.name,
                     size: file.size,
                     hash: await hashFileSha256(file),
+                    file_type: fileTypes[file.name] ?? detectFileType(file.name),
                 })),
             );
 
@@ -668,23 +724,135 @@ export default function Upload() {
         }
     };
 
+    const handleGoToReview = () => {
+        if (!user) {
+            showToast({
+                title: "Login required",
+                message: "Please login before uploading.",
+                variant: "error",
+            });
+            navigate("/login");
+            return;
+        }
+
+        if (!name.trim()) {
+            showToast({
+                title: "Missing package name",
+                message: "Please enter a package name.",
+                variant: "error",
+            });
+            return;
+        }
+
+        if (isNewPackage) {
+            if (!description.trim()) {
+                showToast({
+                    title: "Missing description",
+                    message: "Description is required for new packages.",
+                    variant: "error",
+                });
+                return;
+            }
+
+            if (!documentation.trim()) {
+                showToast({
+                    title: "Missing documentation",
+                    message: "Documentation is required for new packages.",
+                    variant: "error",
+                });
+                return;
+            }
+        }
+
+        if (!version.trim()) {
+            showToast({
+                title: "Missing version",
+                message: "Please enter a semver version.",
+                variant: "error",
+            });
+            return;
+        }
+
+        if (isNewPackage && packageLookup.exists) {
+            showToast({
+                title: "Package exists",
+                message: "That package name is already taken.",
+                variant: "error",
+            });
+            return;
+        }
+
+        if (!isNewPackage && !packageLookup.exists) {
+            showToast({
+                title: "Package not found",
+                message: "Use new package mode to create it first.",
+                variant: "error",
+            });
+            return;
+        }
+
+        if (
+            !isNewPackage &&
+            packageLookup.owner &&
+            packageLookup.owner !== user?.username
+        ) {
+            showToast({
+                title: "Not your package",
+                message: "You can only publish versions you own.",
+                variant: "error",
+            });
+            return;
+        }
+
+        if (accepted.length === 0) {
+            showToast({
+                title: "Missing files",
+                message: "Please select at least one file.",
+                variant: "error",
+            });
+            return;
+        }
+
+        setStep(2);
+    };
+
+    if (step === 2) {
+        return (
+            <PublishReview
+                packageName={name.trim()}
+                version={version.trim()}
+                description={description.trim()}
+                isNewPackage={isNewPackage}
+                files={reviewFiles}
+                isSubmitting={isSubmitting}
+                isUploading={isUploading}
+                uploadProgress={uploadProgress}
+                onBack={() => setStep(1)}
+                onPublish={() =>
+                    handleSubmit({
+                        preventDefault: () => {},
+                    } as SubmitEvent)
+                }
+                onCancelUpload={handleCancelUpload}
+            >
+                <CustomToast toast={toast} onOpenChange={setOpen} />
+            </PublishReview>
+        );
+    }
+
     return (
         <div className="max-w-5xl w-full mx-auto px-6 py-10">
             <div className="mb-8">
                 <h1 className="text-3xl font-extrabold text-white mb-2">
-                    Publish ONNX Package
+                    Publish Package
                 </h1>
                 <p className="text-slate-400">
-                    Upload one or more ONNX files and add detailed
-                    documentation.
+                    Upload model and wrapper files, then review before
+                    publishing.
                 </p>
             </div>
 
-            <form
-                onSubmit={handleSubmit}
-                className="grid items-stretch lg:grid-cols-[1.2fr_1fr] gap-8"
-                aria-busy={isBlocking}
-            >
+            <div className="grid items-stretch lg:grid-cols-[1.2fr_1fr] gap-8">
                 <div className="space-y-6 h-full">
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
                         <div className="flex items-center justify-between mb-6">
@@ -729,7 +897,6 @@ export default function Upload() {
                                     }
                                     placeholder="e.g. vision-encoder"
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    disabled={isBlocking}
                                     required
                                 />
                             </div>
@@ -745,7 +912,6 @@ export default function Upload() {
                                     placeholder="1.0.0"
                                     disabled={isNewPackage}
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    readOnly={isBlocking}
                                     required
                                 />
                                 <p className="mt-2 text-xs text-slate-500">
@@ -770,7 +936,6 @@ export default function Upload() {
                                     }
                                     placeholder="One-line summary for Explore"
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    disabled={isBlocking}
                                     required={isNewPackage}
                                 />
                             </div>
@@ -779,7 +944,7 @@ export default function Upload() {
 
                     <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
                         <h2 className="text-lg font-semibold text-white mb-4">
-                            Model files
+                            Package files
                         </h2>
                         <label
                             className={`group relative flex flex-col items-center justify-center gap-3 overflow-hidden rounded-2xl border border-dashed bg-slate-950/60 px-6 py-10 text-center cursor-pointer transition-colors ${
@@ -796,34 +961,41 @@ export default function Upload() {
                         >
                             <input
                                 type="file"
-                                accept=".onnx"
+                                accept={ALLOWED_EXTENSIONS.join(",")}
                                 multiple
                                 onChange={onFileChange}
                                 onClick={(event) => {
                                     (event.target as HTMLInputElement).value =
                                         "";
                                 }}
-                                disabled={isBlocking}
                                 className="hidden"
                             />
-                            {!isBlocking ? (
-                                <>
-                                    <span className="text-sm font-semibold text-slate-200">
-                                        Drag & drop ONNX files or click to
-                                        browse
-                                    </span>
-                                    <span className="text-xs text-slate-500">
-                                        Only .onnx files are accepted
-                                    </span>
-                                </>
-                            ) : null}
+                            <svg
+                                className="h-8 w-8 text-slate-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={1.5}
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"
+                                />
+                            </svg>
+                            <span className="text-sm font-semibold text-slate-200">
+                                Drag &amp; drop files or click to browse
+                            </span>
+                            <span className="text-xs text-slate-500">
+                                Accepted: {ALLOWED_EXTENSIONS.join(", ")}
+                            </span>
                         </label>
                         {displayFiles.length > 0 ? (
                             <div className="mt-4 space-y-2 text-sm text-slate-300">
                                 {displayFiles.map((file) => (
                                     <div
                                         key={file.name}
-                                        className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
+                                        className="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2.5"
                                     >
                                         <span className="min-w-0 flex-1 truncate">
                                             {file.name}
@@ -832,6 +1004,29 @@ export default function Upload() {
                                             <span className="text-xs text-slate-500">
                                                 {formatBytes(file.size)}
                                             </span>
+                                            <select
+                                                value={file.file_type}
+                                                onChange={(event) =>
+                                                    handleFileTypeChange(
+                                                        file.name,
+                                                        event.target.value as
+                                                            | "model"
+                                                            | "wrapper",
+                                                    )
+                                                }
+                                                className={`cursor-pointer appearance-none rounded-full px-3 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-1 focus:ring-indigo-500 ${
+                                                    file.file_type === "model"
+                                                        ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-500/25"
+                                                        : "bg-violet-500/15 text-violet-300 ring-1 ring-violet-500/25"
+                                                }`}
+                                            >
+                                                <option value="model">
+                                                    Model
+                                                </option>
+                                                <option value="wrapper">
+                                                    Wrapper
+                                                </option>
+                                            </select>
                                             <button
                                                 type="button"
                                                 onClick={() =>
@@ -876,27 +1071,33 @@ export default function Upload() {
                                 }
                                 placeholder="Write detailed usage notes, model specs, input/output formats, and examples..."
                                 className="min-h-60 w-full flex-1 resize-none rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                disabled={isBlocking}
                                 required={isNewPackage}
                             />
                         </div>
                     </div>
 
-                    {!isUploading ? (
-                        <button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-70"
+                    <button
+                        type="button"
+                        onClick={handleGoToReview}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-[0_0_20px_rgba(99,102,241,0.35)] transition-all hover:bg-indigo-500 hover:shadow-[0_0_30px_rgba(99,102,241,0.5)]"
+                    >
+                        <svg
+                            className="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
                         >
-                            {isSubmitting ? "Submitting..." : "Publish package"}
-                        </button>
-                    ) : null}
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M9 5l7 7-7 7"
+                            />
+                        </svg>
+                        Review &amp; Publish
+                    </button>
                 </div>
-            </form>
-
-            {isUploading ? (
-                <div className="fixed inset-0 z-40 cursor-not-allowed bg-slate-950/40 backdrop-blur-sm" />
-            ) : null}
+            </div>
 
             {showPreview ? (
                 <div className="mt-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
@@ -920,36 +1121,6 @@ export default function Upload() {
                 </div>
             ) : null}
 
-            {isUploading ? (
-                <div className="fixed bottom-6 left-1/2 z-50 w-[min(680px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border border-slate-800 bg-slate-950/90 p-4 shadow-xl backdrop-blur">
-                    <div className="flex items-center justify-between gap-4">
-                        <div>
-                            <p className="text-sm font-semibold text-slate-100">
-                                Uploading to Cloudflare R2...
-                            </p>
-                            <p className="text-xs text-slate-400">
-                                Please keep this tab open.
-                            </p>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={handleCancelUpload}
-                            className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-200 hover:bg-red-500/20"
-                        >
-                            Cancel upload
-                        </button>
-                    </div>
-                    <div className="mt-3 h-1.5 w-full rounded-full bg-slate-800">
-                        <div
-                            className="h-1.5 rounded-full bg-indigo-500 transition-all"
-                            style={{ width: `${uploadProgress}%` }}
-                        />
-                    </div>
-                    <p className="mt-2 text-xs text-slate-400">
-                        {uploadProgress}% complete
-                    </p>
-                </div>
-            ) : null}
             <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
