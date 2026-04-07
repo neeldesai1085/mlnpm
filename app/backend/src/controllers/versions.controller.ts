@@ -241,6 +241,21 @@ export async function publishVersion(req: Request, res: Response) {
         nameSet.add(file.name);
     }
 
+    // Enforce exactly one wrapper file
+    const wrapperFiles = files.filter((f) => f.file_type === "wrapper");
+    if (wrapperFiles.length === 0) {
+        res.status(400).json({
+            error: "A wrapper config file is required. Upload exactly one .js/.mjs/.ts file with file_type 'wrapper'.",
+        });
+        return;
+    }
+    if (wrapperFiles.length > 1) {
+        res.status(400).json({
+            error: "Only one wrapper config file is allowed per version.",
+        });
+        return;
+    }
+
     const totalSize = files.reduce((acc, file) => acc + file.size, 0);
     const primaryKey = `packages/${name}/${version}/${files[0]!.name}`;
 

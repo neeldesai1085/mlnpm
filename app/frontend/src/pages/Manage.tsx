@@ -285,6 +285,22 @@ export default function Upload() {
                     });
                 }
 
+                const existingWrapperCount = prev.filter(
+                    (f) => (fileTypes[f.name] ?? detectFileType(f.name)) === "wrapper",
+                ).length;
+                const newWrapperCount = newFiles.filter(
+                    (f) => detectFileType(f.name) === "wrapper",
+                ).length;
+
+                if (existingWrapperCount + newWrapperCount > 1) {
+                    showToast({
+                        title: "Only one wrapper allowed",
+                        message: "Remove the existing wrapper file before adding a new one.",
+                        variant: "error",
+                    });
+                    return prev;
+                }
+
                 setFileTypes((prev) => {
                     const next = { ...prev };
                     for (const f of newFiles) {
@@ -338,6 +354,22 @@ export default function Upload() {
                     });
                 }
 
+                const existingWrapperCount = prev.filter(
+                    (f) => (fileTypes[f.name] ?? detectFileType(f.name)) === "wrapper",
+                ).length;
+                const newWrapperCount = newFiles.filter(
+                    (f) => detectFileType(f.name) === "wrapper",
+                ).length;
+
+                if (existingWrapperCount + newWrapperCount > 1) {
+                    showToast({
+                        title: "Only one wrapper allowed",
+                        message: "Remove the existing wrapper file before adding a new one.",
+                        variant: "error",
+                    });
+                    return prev;
+                }
+
                 setFileTypes((prev) => {
                     const next = { ...prev };
                     for (const f of newFiles) {
@@ -363,6 +395,20 @@ export default function Upload() {
     };
 
     const handleFileTypeChange = (fileName: string, newType: "model" | "wrapper") => {
+
+        if (newType === "wrapper") {
+            const existingWrappers = accepted.filter(
+                (f) => f.name !== fileName && (fileTypes[f.name] ?? detectFileType(f.name)) === "wrapper",
+            );
+            if (existingWrappers.length >= 1) {
+                showToast({
+                    title: "Only one wrapper allowed",
+                    message: "Remove the existing wrapper file before changing this file type.",
+                    variant: "error",
+                });
+                return;
+            }
+        }
         setFileTypes((prev) => ({ ...prev, [fileName]: newType }));
     };
 
@@ -585,6 +631,31 @@ export default function Upload() {
             showToast({
                 title: "Missing files",
                 message: "Please select at least one file.",
+                variant: "error",
+            });
+            return;
+        }
+
+        const hasWrapper = accepted.some(
+            (f) => (fileTypes[f.name] ?? detectFileType(f.name)) === "wrapper",
+        );
+        if (!hasWrapper) {
+            showToast({
+                title: "Missing wrapper file",
+                message:
+                    "A wrapper config file (.js/.mjs/.ts) is required. This defines how developers use your model with predict().",
+                variant: "error",
+            });
+            return;
+        }
+
+        const wrapperCount = accepted.filter(
+            (f) => (fileTypes[f.name] ?? detectFileType(f.name)) === "wrapper",
+        ).length;
+        if (wrapperCount > 1) {
+            showToast({
+                title: "Too many wrapper files",
+                message: "Only one wrapper config file is allowed per version.",
                 variant: "error",
             });
             return;

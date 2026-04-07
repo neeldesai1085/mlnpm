@@ -12,6 +12,8 @@ import { pool } from "./db/client.js";
 import authRoutes from "./routes/auth.routes.js";
 import packagesRoutes from "./routes/packages.routes.js";
 import versionsRoutes from "./routes/versions.routes.js";
+import manifestRoutes from "./routes/manifest.routes.js";
+
 
 const app = express();
 
@@ -41,6 +43,8 @@ app.get("/health", async (_req, res) => {
 app.use("/auth", authRoutes);
 app.use("/packages", packagesRoutes);
 app.use("/packages/:name/versions", versionsRoutes);
+app.use("/packages/:name/versions", manifestRoutes);
+
 
 const OTP_CLEANUP_INTERVAL_MS = 15 * 60 * 1000;
 
