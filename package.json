@@ -6,9 +6,11 @@
     "scripts": {
         "dev:backend": "npm run dev -w @mlnpm/backend",
         "dev:frontend": "npm run dev -w @mlnpm/frontend",
+        "dev:runtime": "npm run dev -w @mlnpm/runtime",
         "migrate": "npm run migrate -w @mlnpm/backend",
         "build:backend": "npm run build -w @mlnpm/backend",
-        "build:frontend": "npm run build -w @mlnpm/frontend"
+        "build:frontend": "npm run build -w @mlnpm/frontend",
+        "build:runtime": "npm run build -w @mlnpm/runtime"
     },
     "workspaces": [
         "app/*"
