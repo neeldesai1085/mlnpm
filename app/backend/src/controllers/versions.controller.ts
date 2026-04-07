@@ -217,7 +217,7 @@ export async function publishVersion(req: Request, res: Response) {
     try {
         files = parsed.data.files?.map((file) => ({
                 name: file.file_type === "wrapper"
-                    ? sanitizeFileName(file.name)
+                    ? "wrapper.config.js"
                     : ensureOnnxFile(sanitizeFileName(file.name)),
                 size: file.size,
                 hash: file.hash ?? null,

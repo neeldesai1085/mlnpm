@@ -685,13 +685,23 @@ export default function Upload() {
             }
 
             const fileList: UploadFile[] = await Promise.all(
-                accepted.map(async (file) => ({
-                    name: file.name,
-                    size: file.size,
-                    hash: await hashFileSha256(file),
-                    file_type: fileTypes[file.name] ?? detectFileType(file.name),
-                })),
+                accepted.map(async (file) => {
+                    const type = fileTypes[file.name] ?? detectFileType(file.name);
+                    return {
+                        name: type === "wrapper" ? "wrapper.config.js" : file.name,
+                        size: file.size,
+                        hash: await hashFileSha256(file),
+                        file_type: type,
+                    };
+                }),
             );
+
+            const nameToOriginalFile = new Map<string, File>();
+            for (const file of accepted) {
+                const type = fileTypes[file.name] ?? detectFileType(file.name);
+                const key = type === "wrapper" ? "wrapper.config.js" : file.name;
+                nameToOriginalFile.set(key, file);
+            }
 
             const publish = (await api(`/packages/${name.trim()}/versions`, {
                 method: "POST",
@@ -715,7 +725,7 @@ export default function Upload() {
             setUploadProgress(0);
             setIsUploading(true);
             for (const target of uploadTargets) {
-                const file = accepted.find((item) => item.name === target.name);
+                const file = nameToOriginalFile.get(target.name);
                 if (!file) continue;
                 try {
                     await uploadFileWithProgress(
