@@ -319,6 +319,63 @@ export default function Package() {
                 </>
             ) : null}
 
+            <div className="mt-10">
+                <h2 className="text-xl font-bold text-white mb-4">Usage</h2>
+                <pre
+                    className="overflow-x-auto rounded-2xl border border-slate-800 p-6 text-[0.85rem] leading-relaxed font-mono"
+                    style={{ background: "#011627" }}
+                >
+                    <code>
+                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>import</span>
+                        <span style={{ color: "#d6deeb" }}> model </span>
+                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>from</span>
+                        <span style={{ color: "#d6deeb" }}> </span>
+                        <span style={{ color: "#ecc48d" }}>{`"${pkg.name}"`}</span>
+                        <span style={{ color: "#89ddff" }}>;</span>
+                        {"\n\n"}
+
+                        <span style={{ color: "#637777", fontStyle: "italic" }}>{"// Downloads the model on first run, then loads from cache"}</span>
+                        {"\n"}
+
+                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>await</span>
+                        <span style={{ color: "#d6deeb" }}> model</span>
+                        <span style={{ color: "#89ddff" }}>.</span>
+                        <span style={{ color: "#82aaff" }}>init</span>
+                        <span style={{ color: "#d6deeb" }}>()</span>
+                        <span style={{ color: "#89ddff" }}>;</span>
+                        {"\n\n"}
+
+                        <span style={{ color: "#637777", fontStyle: "italic" }}>{"// Run inference with plain JS objects"}</span>
+                        {"\n"}
+
+                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>const</span>
+                        <span style={{ color: "#d6deeb" }}> result </span>
+                        <span style={{ color: "#89ddff" }}>=</span>
+                        <span style={{ color: "#d6deeb" }}> </span>
+                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>await</span>
+                        <span style={{ color: "#d6deeb" }}> model</span>
+                        <span style={{ color: "#89ddff" }}>.</span>
+                        <span style={{ color: "#82aaff" }}>predict</span>
+                        <span style={{ color: "#89ddff" }}>{"({"}</span>
+                        {"\n"}
+
+                        <span style={{ color: "#d6deeb" }}>{"  "}</span>
+                        <span style={{ color: "#637777", fontStyle: "italic" }}>{"// ... your input data"}</span>
+                        {"\n"}
+
+                        <span style={{ color: "#89ddff" }}>{"})"}</span>
+                        <span style={{ color: "#89ddff" }}>;</span>
+                        {"\n\n"}
+
+                        <span style={{ color: "#d6deeb" }}>console</span>
+                        <span style={{ color: "#89ddff" }}>.</span>
+                        <span style={{ color: "#82aaff" }}>log</span>
+                        <span style={{ color: "#d6deeb" }}>(result)</span>
+                        <span style={{ color: "#89ddff" }}>;</span>
+                    </code>
+                </pre>
+            </div>
+
             <CustomToast toast={toast} onOpenChange={setOpen} />
         </div>
     );
