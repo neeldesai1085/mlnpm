@@ -1,8 +1,16 @@
+import type { OnnxSession } from "./session.js";
+
+export interface TensorConfig {
+    data: number[] | bigint[] | string[] | boolean[];
+    shape: number[];
+    type: "float32" | "int64" | "int32" | "bool" | "string";
+}
+
 export interface WrapperConfig {
     inputs: string[];
     outputs: string[];
-    preprocess: (data: Record<string, unknown>) => number[];
-    postprocess: (rawOutput: number[]) => Record<string, unknown>;
+    predict: (sessions: Record<string, OnnxSession>, input: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    stream?: (sessions: Record<string, OnnxSession>, input: Record<string, unknown>) => AsyncGenerator<Record<string, unknown>, void, unknown>;
 }
 
 export interface ModelConfig extends WrapperConfig {
@@ -14,6 +22,7 @@ export interface ModelConfig extends WrapperConfig {
 export interface ModelInstance {
     init: () => Promise<void>;
     predict: (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    stream?: (input: Record<string, unknown>) => AsyncGenerator<Record<string, unknown>, void, unknown>;
     isReady: () => boolean;
     dispose: () => void;
 }
