@@ -21,16 +21,12 @@ const envSchema = z.object({
     PORT: z.coerce.number().default(3000),
     JWT_SECRET: z.string().min(32, "JWT_SECRET must be at least 32 characters"),
     FRONTEND_URL: z.url().default("http://localhost:5173"),
-    SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
-    SMTP_PORT: z.coerce.number().default(465),
-    SMTP_USER: z.string().min(1, "SMTP_USER is required"),
-    SMTP_PASS: z.string().min(1, "SMTP_PASS is required"),
-    SMTP_FROM: z.string().min(1, "SMTP_FROM is required"),
-    SMTP_SECURE: z.coerce.boolean().default(true),
+    SENDER_EMAIL: z.string().min(1, "SENDER_EMAIL is required"),
     CLOUDINARY_CLOUD_NAME: z.string().min(1, "CLOUDINARY_CLOUD_NAME is required"),
     CLOUDINARY_API_KEY: z.string().min(1, "CLOUDINARY_API_KEY is required"),
     CLOUDINARY_API_SECRET: z.string().min(1, "CLOUDINARY_API_SECRET is required"),
     CLOUDINARY_FOLDER: z.string().min(1).default("mlnpm-avatars"),
+    BREVO_API_KEY: z.string().min(1, "BREVO_API_KEY is required"),
 });
 
 const parsed = envSchema.safeParse(process.env);
