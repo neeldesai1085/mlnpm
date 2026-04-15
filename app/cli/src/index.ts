@@ -7,12 +7,14 @@ import { restoreCommand } from "./commands/restore.js";
 import { listCommand } from "./commands/list.js";
 import { cacheListCommand, cacheCleanCommand } from "./commands/cache.js";
 
+import pkg from "../package.json" with { type: "json" };
+
 const program = new Command();
 
 program
     .name("mlnpm")
     .description("The Distributed Machine Learning Package Manager")
-    .version("1.0.0");
+    .version(pkg.version);
 
 program
     .command("install <name>")

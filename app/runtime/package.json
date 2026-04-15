@@ -1,6 +1,9 @@
 {
   "name": "@mlnpm/runtime",
-  "version": "1.0.1",
+  "version": "1.0.5",
+  "files": [
+    "dist"
+  ],
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
