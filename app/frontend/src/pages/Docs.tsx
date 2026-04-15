@@ -533,6 +533,50 @@ function CliSection() {
                     <strong>Warning:</strong> Any web projects currently structurally relying on these models globally will aggressively demand massive gigabyte downloads fundamentally upon their next sequence restarts!
                 </div>
             </div>
+
+            <h2 className="text-2xl font-bold text-white mt-14 mb-4">Environment Variables</h2>
+            <p className="mb-6 text-slate-300">
+                The MLNPM CLI reads one optional environment variable. Most users will never need to set it — the CLI ships 
+                pre-configured to point at the official MLNPM registry automatically.
+            </p>
+
+            <div className="mt-4">
+                <code className="text-lg font-bold text-yellow-400 block mb-2">MLNPM_REGISTRY</code>
+                <p className="text-sm text-slate-300 mb-3">
+                    Overrides the registry URL that the CLI connects to. By default, all CLI commands target 
+                    the official MLNPM global registry. You only need to set this variable if you are:
+                </p>
+                <ul className="list-disc pl-5 text-sm text-slate-300 space-y-1 mb-4">
+                    <li>Running your own private self-hosted MLNPM instance inside a corporate network.</li>
+                    <li>A contributor working on MLNPM itself locally and pointing the CLI at a local dev server.</li>
+                </ul>
+                <p className="text-sm text-slate-400 mb-4">
+                    Because the CLI is a global system tool and not a web application, this variable is set in your 
+                    operating system shell — not in a <code>.env</code> file. No dotenv library is required.
+                </p>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mt-4">
+                    <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Mac / Linux — add to ~/.bashrc or ~/.zshrc</p>
+                    <pre className="text-sm text-yellow-300">{`export MLNPM_REGISTRY=https://your-private-registry.com`}</pre>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mt-3">
+                    <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Windows — PowerShell (current session)</p>
+                    <pre className="text-sm text-yellow-300">{`$env:MLNPM_REGISTRY = "https://your-private-registry.com"`}</pre>
+                </div>
+
+                <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 mt-3">
+                    <p className="text-xs text-slate-500 mb-2 uppercase tracking-wider font-semibold">Windows — set permanently via System Properties</p>
+                    <pre className="text-sm text-slate-400 whitespace-pre-wrap">{`Start → "Edit the system environment variables" → Environment Variables → New
+Variable name:  MLNPM_REGISTRY
+Variable value: https://your-private-registry.com`}</pre>
+                </div>
+
+                <p className="text-sm text-slate-500 mt-4">
+                    Once set, every subsequent CLI command — <code>mlnpm install</code>, <code>mlnpm restore</code>, 
+                    <code>mlnpm list</code> — will point at your custom registry. No other configuration is required.
+                </p>
+            </div>
         </div>
     );
 }
