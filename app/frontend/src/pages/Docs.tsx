@@ -217,6 +217,32 @@ function PublishSection() {
                     <li>You are strictly prohibited from publishing an identical version number structurally. If you failed to add a wrapper on <code>1.0.0</code>, just instantly re-upload completely on <code>1.0.1</code>!</li>
                 </ul>
             </div>
+
+            <div className="bg-red-950/20 border border-red-900/50 rounded-xl p-5 mt-8">
+                <h3 className="text-red-500 font-bold mb-2">Important for Scikit-Learn Users</h3>
+                <p className="text-sm mb-4">
+                    If you are using <code>skl2onnx</code> to export your model, you **MUST** disable ZipMap.
+                    By default, scikit-learn ONNX exporters try to output a "Map" type for probabilities, which is not supported by 
+                    the MLNPM Runtime (Node.js/Web).
+                </p>
+                <p className="text-xs text-slate-400 mb-2 font-mono">❌ Error if ignored: "Non tensor type is temporarily not supported"</p>
+                <div className="bg-black/40 p-4 rounded-lg">
+                    <p className="text-xs text-white font-bold mb-2">Correct Export Setting in Python:</p>
+                    <pre className="text-xs text-emerald-400">
+{`from skl2onnx import convert_sklearn
+
+# THE CRITICAL FIX: Add options={'zipmap': False}
+onx = convert_sklearn(
+    model, 
+    initial_types=initial_types, 
+    options={'zipmap': False} # <--- Exact setting needed
+)
+
+with open("model.onnx", "wb") as f:
+    f.write(onx.SerializeToString())`}
+                    </pre>
+                </div>
+            </div>
         </div>
     );
 }
