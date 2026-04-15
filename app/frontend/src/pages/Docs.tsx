@@ -85,7 +85,7 @@ function IntroSection() {
             <h2 className="text-2xl font-bold text-white mt-8 mb-4">Why does MLNPM exist?</h2>
             
             <p>
-                Historically, integrating an Artificial Intelligence model into a web application was an incredibly complex engineering feat.
+                Historically, integrating an Artificial Intelligence model into a Node.js backend was an incredibly complex engineering feat.
                 Data Scientists and Web Developers operate in entirely different architectural ecosystems.
             </p>
 
@@ -102,9 +102,9 @@ function IntroSection() {
                 <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-xl p-5">
                     <h3 className="text-emerald-400 font-bold mb-2">The Modern Era (With MLNPM)</h3>
                     <ul className="list-disc pl-5 space-y-2 text-sm">
-                        <li>Models natively execute directly inside your existing Javascript/Typescript architecture.</li>
+                        <li>Models natively execute directly inside your existing backend architecture.</li>
                         <li>Absolutely zero python code is required in your application logic.</li>
-                        <li>You install and manage models seamlessly the exact same way you manage normal NPM web libraries.</li>
+                        <li>You install and manage models seamlessly the exact same way you manage normal NPM backend libraries.</li>
                         <li>Zero active server hosting costs for idle inference.</li>
                     </ul>
                 </div>
@@ -122,7 +122,7 @@ function IntroSection() {
                     <strong className="text-emerald-400 text-lg">The Local CLI Environment:</strong> A sophisticated CLI program (<code>@mlnpm/cli</code>) executed exclusively on your local workstation and your remote deployment platforms. It oversees tracking precisely which models your application depends on, downloads them seamlessly into your system architecture, handles caching to stop duplicate bandwidth execution, and securely binds the logic correctly.
                 </li>
                 <li>
-                    <strong className="text-pink-400 text-lg">The Standard Runtime:</strong> A heavily optimized native client side utility (<code>@mlnpm/runtime</code>). This enables your Javascript code to safely orchestrate mathematical executions natively at the speed of compiled code without you ever learning the mathematics behind it.
+                    <strong className="text-pink-400 text-lg">The Standard Runtime:</strong> A heavily optimized native server-side utility (<code>@mlnpm/runtime</code>). This enables your Javascript code to safely orchestrate mathematical executions natively at the speed of compiled code without you ever learning the mathematics behind it.
                 </li>
             </ul>
 
@@ -131,7 +131,7 @@ function IntroSection() {
 
             <ol className="list-decimal pl-6 space-y-4 text-slate-300">
                 <li>
-                    <strong>Platform Setup:</strong> You begin by opening a standard Web Application (React, Edge, Next.js, traditional Node server, etc.).
+                    <strong>Platform Setup:</strong> You begin by opening a standard Node.js application (Express, NestJS, Next.js API Routes, traditional server, etc.).
                 </li>
                 <li>
                     <strong>Install Dependencies:</strong> 
@@ -146,6 +146,17 @@ npm install -g @mlnpm/cli`}</code></pre>
                     <strong>Execution:</strong> You import the package directly inside your Typescript file, initialize it safely into active execution memory, and immediately begin securely predicting outputs based on structured javascript Object data!
                 </li>
             </ol>
+            <div className="bg-indigo-950/30 border border-indigo-900/50 rounded-xl p-6 mt-10">
+                <h3 className="text-xl font-bold text-indigo-400 mb-2">⚠️ Backend-Only Architecture</h3>
+                <p className="text-slate-300">
+                    MLNPM is architected exclusively for <strong>Node.js Backend Environments</strong>. Because the runtime requires 
+                    direct filesystem access for model caching and relies on native binary bindings (ONNX Runtime Node), 
+                    <strong>it cannot be used directly in a browser environment (Frontend)</strong>. 
+                </p>
+                <p className="text-slate-400 text-sm mt-2 font-mono">
+                    Proper usage pattern: Client App → Fetch Request → Node.js Backend (MLNPM) → Result → Client App.
+                </p>
+            </div>
         </div>
     );
 }
@@ -223,7 +234,7 @@ function PublishSection() {
                 <p className="text-sm mb-4">
                     If you are using <code>skl2onnx</code> to export your model, you **MUST** disable ZipMap.
                     By default, scikit-learn ONNX exporters try to output a "Map" type for probabilities, which is not supported by 
-                    the MLNPM Runtime (Node.js/Web).
+                    the MLNPM Runtime (Node.js).
                 </p>
                 <p className="text-xs text-slate-400 mb-2 font-mono">❌ Error if ignored: "Non tensor type is temporarily not supported"</p>
                 <div className="bg-black/40 p-4 rounded-lg">
@@ -704,7 +715,7 @@ function RuntimeSection() {
         <div className="space-y-6 text-slate-300">
             <h1 className="text-3xl font-extrabold text-white mb-4">The Standard Runtime Engine</h1>
             <p>
-                The global CLI fetches the massive bytes locally, however, the <strong>Standard Runtime Engine</strong> (<code>@mlnpm/runtime</code>) is strictly the library that mathematical executes and orchestrates them perfectly inside your structural web applications dynamically.
+                The global CLI fetches the massive bytes locally, however, the <strong>Standard Runtime Engine</strong> (<code>@mlnpm/runtime</code>) is strictly the library that mathematical executes and orchestrates them perfectly inside your structural backend applications dynamically.
                 It completely isolates the highly-complex internal execution pipelines natively and securely exposes an elegant structural standard to your Javascript ecosystem seamlessly.
             </p>
 
@@ -717,7 +728,7 @@ function RuntimeSection() {
 // A standard Next.js / Express Route API handler:
 export async function POST(req, res) {
     try {
-        // Retrieve standard analytical data seamlessly from your global frontend
+        // Retrieve standard analytical data seamlessly from your incoming client request
         const { current_balance, age, active_member } = req.body;
 
         // Ensure the mathematical execution bytes cleanly synchronize deeply into active physical server RAM.
@@ -749,6 +760,31 @@ export async function POST(req, res) {
                     <li>If it determines the model is fundamentally completely missing dynamically, it triggers an emergency acquisition precisely mimicking the central network securely.</li>
                     <li>If the model securely exists inside your local physical cache seamlessly, it instantly mounts those massive exact files directly into strict execution memory universally without ever requesting external network bytes dynamically!</li>
                 </ul>
+            </div>
+            <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 mt-10">
+                <h3 className="text-xl font-bold text-white mb-4">Deployment & Production Strategy</h3>
+                <p className="mb-4 text-slate-300">
+                    MLNPM is safe for production deployment across all major cloud providers and containerized environments. 
+                    However, because it uses native binaries, you should follow these backend-specific requirements:
+                </p>
+                <div className="space-y-4">
+                    <div className="bg-black/40 p-4 rounded-lg border border-slate-800">
+                        <strong className="text-indigo-400 block mb-1">Native Dependencies</strong>
+                        <p className="text-xs text-slate-400">
+                            The <code>onnxruntime-node</code> dependency requires native build tools during installation on Linux 
+                            (e.g., <code>build-essential</code> and <code>python3</code>). Standard Node.js Docker images usually 
+                            include these or provide compatible binaries.
+                        </p>
+                    </div>
+                    <div className="bg-black/40 p-4 rounded-lg border border-slate-800">
+                        <strong className="text-emerald-400 block mb-1">Filesystem Permissions</strong>
+                        <p className="text-xs text-slate-400">
+                            MLNPM caches models in the user's home directory (<code>~/.mlnpm/cache</code>). Your execution 
+                            environment (Docker user, Service account) must have write permissions to this path to download models 
+                            on the first run or during <code>postinstall</code>.
+                        </p>
+                    </div>
+                </div>
             </div>
 
             <h2 className="text-2xl font-bold text-white mt-12 mb-4">Handling Streaming Outputs Structure</h2>
