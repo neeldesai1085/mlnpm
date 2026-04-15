@@ -14,6 +14,7 @@ import Upload from "./pages/Manage";
 import Delete from "./pages/Delete";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import Docs from "./pages/Docs";
 
 export default function App() {
     const [user, setUser] = useState<User | null>(getUser());
@@ -69,6 +70,7 @@ export default function App() {
                 <Route path="/delete" element={<Delete />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/packages/:name" element={<Package />} />
+                <Route path="/docs" element={<Docs />} />
 
                 <Route path="*" element={<NotFound />} />
             </Routes>
