@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { getUser, clearAuth, getTokenExpiryMs } from "./utils/api";
+import { getUser, clearAuth, getTokenExpiryMs, api } from "./utils/api";
 import type { User } from "./utils/api";
 
 import Navbar from "./components/Navbar";
@@ -26,6 +26,19 @@ export default function App() {
     };
 
     useEffect(() => {
+        const validateSession = async () => {
+            if (!user) return;
+            try {
+                await api("/auth/me");
+            } catch (err: any) {
+                if (err.message === "User not found" || err.message === "Unauthorized") {
+                    handleLogout();
+                }
+            }
+        };
+
+        validateSession();
+
         const token = localStorage.getItem("mlnpm_token");
         if (!token) {
             return;
