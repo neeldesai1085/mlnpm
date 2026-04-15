@@ -58,11 +58,8 @@ export async function installCommand(rawName: string): Promise<void> {
 export default {
     inputs: [],
     outputs: [],
-    preprocess(data) {
-        return Object.values(data).map(Number);
-    },
-    postprocess(rawOutput) {
-        return { output: rawOutput };
+    async predict(sessions, input) {
+        throw new Error("This model was published without a wrapper.config.js. You must write custom predict logic to use it.");
     }
 };
 `;
