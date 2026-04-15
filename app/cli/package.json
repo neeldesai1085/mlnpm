@@ -1,7 +1,6 @@
 {
   "name": "@mlnpm/cli",
   "version": "1.0.0",
-  "private": true,
   "description": "",
   "main": "/dist/index.js",
   "keywords": [],
@@ -26,5 +25,8 @@
     "chalk": "^4.1.2",
     "commander": "^4.1.1",
     "ora": "^9.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
