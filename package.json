@@ -10,7 +10,9 @@
         "migrate": "npm run migrate -w @mlnpm/backend",
         "build:backend": "npm run build -w @mlnpm/backend",
         "build:frontend": "npm run build -w @mlnpm/frontend",
-        "build:runtime": "npm run build -w @mlnpm/runtime"
+        "build:runtime": "npm run build -w @mlnpm/runtime",
+        "build:cli": "npm run build -w @mlnpm/cli",
+        "build": "npm run build --workspaces --if-present"
     },
     "workspaces": [
         "app/*"
