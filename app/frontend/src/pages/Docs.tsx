@@ -167,7 +167,7 @@ function PublishSection() {
                     <strong>The Open Standard Formatting (.onnx):</strong> We strictly adhere to the unified ONNX structure. Frameworks like PyTorch (<code>torch.onnx.export</code>) and TensorFlow natively allow you to transition your models directly into this standard. We support huge file sizes dynamically.
                 </li>
                 <li>
-                    <strong>The Execution Wrapper (wrapper.config.js):</strong> Models are essentially enormous, blind mathematical calculators. A web developer has absolutely no idea what structure of tensor you require. This critical file specifically teaches the local MLNPM ecosystem precisely how to translate normal web developer input gracefully into your required structure safely. (See the <strong>Writing Wrappers</strong> page for deep analysis).
+                    <strong>The Execution Wrapper (.ts, .js, .mjs):</strong> Models are essentially enormous, blind mathematical calculators. A web developer has absolutely no idea what structure of tensor you require. This critical file specifically teaches the local MLNPM ecosystem precisely how to translate normal web developer input gracefully into your required structure safely. You can author your wrapper in **TypeScript (.ts)** or **JavaScript (.js/.mjs)**.
                 </li>
             </ul>
 
@@ -232,8 +232,10 @@ function WrappersSection() {
                 your model being genuinely usable and completely inaccessible.
             </p>
             <p>
-                This file is uploaded alongside your <code>.onnx</code> file at publish time. When a developer runs <code>mlnpm install</code>, 
-                this wrapper is downloaded and injected directly into their project as the executable interface for your model.
+                This file is uploaded alongside your <code>.onnx</code> file at publish time. You can write your wrapper in **TypeScript (.ts)** for full type-safety, or standard **JavaScript (.js / .mjs)**. When you upload a `.ts` file via the dashboard, it is automatically compiled to clean JavaScript before being stored.
+            </p>
+            <p>
+                When a developer runs <code>mlnpm install</code>, this wrapper is downloaded and injected directly into their project as the executable interface for your model, always named <code>wrapper.config.js</code>.
             </p>
 
             <h2 className="text-2xl font-bold text-white mt-10 mb-4">The Core Contract: inputs & outputs</h2>

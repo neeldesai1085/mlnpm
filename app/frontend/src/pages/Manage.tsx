@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import type { Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { createSHA256 } from "hash-wasm";
+import { transform } from "sucrase";
 import CustomToast from "../components/CustomToast";
 import PublishReview from "../components/PublishReview";
 import type { ReviewFile } from "../components/PublishReview";
@@ -684,23 +685,48 @@ export default function Upload() {
                 });
             }
 
-            const fileList: UploadFile[] = await Promise.all(
+            const processedFiles = await Promise.all(
                 accepted.map(async (file) => {
                     const type = fileTypes[file.name] ?? detectFileType(file.name);
+                    
+                    if (type === "wrapper" && file.name.toLowerCase().endsWith(".ts")) {
+                        const code = await file.text();
+                        try {
+                            const compiled = transform(code, {
+                                transforms: ["typescript"],
+                            });
+                            
+                            return new File([compiled.code], "wrapper.config.js", {
+                                type: "application/javascript",
+                                lastModified: file.lastModified,
+                            });
+                        } catch (err: any) {
+                            throw new Error(`TypeScript compilation failed for ${file.name}: ${err.message}`);
+                        }
+                    } else if (type === "wrapper") {
+                        return new File([await file.arrayBuffer()], "wrapper.config.js", {
+                            type: file.type,
+                            lastModified: file.lastModified,
+                        });
+                    }
+                    return file;
+                })
+            );
+
+            const fileList: UploadFile[] = await Promise.all(
+                processedFiles.map(async (file) => {
                     return {
-                        name: type === "wrapper" ? "wrapper.config.js" : file.name,
+                        name: file.name,
                         size: file.size,
                         hash: await hashFileSha256(file),
-                        file_type: type,
+                        file_type: file.name === "wrapper.config.js" ? "wrapper" : "model",
                     };
                 }),
             );
 
             const nameToOriginalFile = new Map<string, File>();
-            for (const file of accepted) {
-                const type = fileTypes[file.name] ?? detectFileType(file.name);
-                const key = type === "wrapper" ? "wrapper.config.js" : file.name;
-                nameToOriginalFile.set(key, file);
+            for (const file of processedFiles) {
+                nameToOriginalFile.set(file.name, file);
             }
 
             const publish = (await api(`/packages/${name.trim()}/versions`, {
