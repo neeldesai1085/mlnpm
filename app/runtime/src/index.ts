@@ -69,26 +69,27 @@ export function createModel(config: ModelConfig): ModelInstance {
             console.log(`[mlnpm] ✓ ${config.name}@${config.version} ready`);
         },
 
-        async predict(
-            input: Record<string, unknown>,
-        ): Promise<Record<string, unknown>> {
-            if (!ready) {
-                throw new Error(`[mlnpm] ${config.name}: Model not initialized. Call await model.init() first.`);
+        ...(config.predict && {
+            async predict(
+                input: Record<string, unknown>,
+            ): Promise<Record<string, unknown>> {
+                if (!ready) {
+                    throw new Error(`[mlnpm] ${config.name}: Model not initialized. Call await model.init() first.`);
+                }
+                
+                return await config.predict!(sessions, input);
             }
-            
-            return await config.predict(sessions, input);
-        },
+        }),
 
-        async *stream(input: Record<string, unknown>): AsyncGenerator<Record<string, unknown>, void, unknown> {
-            if (!ready) {
-                throw new Error(`[mlnpm] ${config.name}: Model not initialized. Call await model.init() first.`);
+        ...(config.stream && {
+            async *stream(input: Record<string, unknown>): AsyncGenerator<Record<string, unknown>, void, unknown> {
+                if (!ready) {
+                    throw new Error(`[mlnpm] ${config.name}: Model not initialized. Call await model.init() first.`);
+                }
+                
+                yield *config.stream!(sessions, input);
             }
-            if (!config.stream) {
-                throw new Error(`[mlnpm] ${config.name}: This model wrapper does not support streaming.`);
-            }
-            
-            yield *config.stream(sessions, input);
-        },
+        }),
 
         isReady(): boolean {
             return ready;

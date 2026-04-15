@@ -9,7 +9,7 @@ export interface TensorConfig {
 export interface WrapperConfig {
     inputs: string[];
     outputs: string[];
-    predict: (sessions: Record<string, OnnxSession>, input: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    predict?: (sessions: Record<string, OnnxSession>, input: Record<string, unknown>) => Promise<Record<string, unknown>>;
     stream?: (sessions: Record<string, OnnxSession>, input: Record<string, unknown>) => AsyncGenerator<Record<string, unknown>, void, unknown>;
 }
 
@@ -21,7 +21,7 @@ export interface ModelConfig extends WrapperConfig {
 
 export interface ModelInstance {
     init: () => Promise<void>;
-    predict: (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    predict?: (input: Record<string, unknown>) => Promise<Record<string, unknown>>;
     stream?: (input: Record<string, unknown>) => AsyncGenerator<Record<string, unknown>, void, unknown>;
     isReady: () => boolean;
     dispose: () => void;
