@@ -20,7 +20,6 @@ export default function Explore() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const { toast, showToast, setOpen } = useToastState();
-    const publishCommand = "mlnpm publish my-model";
 
     const trimmedSearch = useMemo(() => search.trim(), [search]);
 
@@ -36,7 +35,8 @@ export default function Explore() {
                     params.set("search", trimmedSearch);
                 }
                 const query = params.toString();
-                const data = await api(`/packages${query ? `?${query}` : ""}`);
+                const response = await api(`/packages${query ? `?${query}` : ""}`);
+                const data = response as { packages: PackageSummary[] };
 
                 if (!isActive) {
                     return;
@@ -156,35 +156,16 @@ export default function Explore() {
                     <p className="text-slate-500 mb-6">
                         {trimmedSearch.length > 0
                             ? "Try another name or clear the search."
-                            : "Be the first! Use the CLI to publish an ONNX model."}
+                            : "Be the first! Use the Manage dashboard to publish an ONNX model."}
                     </p>
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            try {
-                                await navigator.clipboard.writeText(
-                                    publishCommand,
-                                );
-                                showToast({
-                                    title: "Copied",
-                                    message:
-                                        "Publish command copied to clipboard.",
-                                    variant: "success",
-                                });
-                            } catch {
-                                showToast({
-                                    title: "Copy failed",
-                                    message: "Please try again.",
-                                    variant: "error",
-                                });
-                            }
-                        }}
-                        className="inline-flex items-center gap-2 px-6 py-3 bg-slate-950 border border-slate-800 rounded-xl font-mono text-emerald-400 cursor-pointer"
-                        aria-label="Copy publish command"
-                    >
-                        <span className="text-slate-500">$</span> mlnpm publish
-                        my-model
-                    </button>
+                    {trimmedSearch.length === 0 && (
+                        <Link
+                            to="/manage"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
+                        >
+                            Publish First Model
+                        </Link>
+                    )}
                 </div>
             ) : null}
             <CustomToast toast={toast} onOpenChange={setOpen} />
