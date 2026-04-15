@@ -70,10 +70,8 @@ export default {
         ensurePostinstall();
         pkgSpinner.succeed("Updated package.json");
 
-        // 1. Install runtime dependencies FIRST so npm doesn't prune our model folder later
         await ensureRuntimeDeps();
 
-        // 2. Scaffold the package into node_modules AFTER npm install has finished
         const scaffoldSpinner = ora(
             `Scaffolding node_modules/${packageName}/`,
         ).start();
@@ -92,9 +90,21 @@ export default {
         log.header("  Usage:");
         log.plain(`  import model from "${packageName}";`);
         log.plain("  await model.init();  // downloads model on first run");
-        log.plain(
-            "  const result = await model.predict({ /* your input */ });",
-        );
+
+        if ((!manifest.has_predict && !manifest.has_stream) || manifest.has_predict) {
+            log.plain(
+                "  const result = await model.predict({ /* your input */ });",
+            );
+        }
+
+        if (manifest.has_stream) {
+            log.plain(
+                "  const stream = model.stream({ /* prompt/input */ });",
+            );
+            log.plain(
+                "  for await (const chunk of stream) { console.log(chunk.token); }",
+            );
+        }
         log.br();
     } catch (err: any) {
         spinner.fail("Installation failed");

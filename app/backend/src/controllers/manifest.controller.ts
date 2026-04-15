@@ -24,11 +24,13 @@ export async function getManifest(req: Request, res: Response) {
         onnx_file_key: string;
         onnx_file_size: number;
         metadata: Record<string, unknown>;
+        has_predict: boolean;
+        has_stream: boolean;
     };
 
     if (versionParam === "latest") {
         const result = await query<typeof versionRow>(
-            `SELECT id, version, onnx_file_key, onnx_file_size, metadata
+            `SELECT id, version, onnx_file_key, onnx_file_size, metadata, has_predict, has_stream
              FROM versions
              WHERE package_id = $1 AND is_yanked = false
              ORDER BY created_at DESC
@@ -45,7 +47,7 @@ export async function getManifest(req: Request, res: Response) {
 
     } else {
         const result = await query<typeof versionRow>(
-            `SELECT id, version, onnx_file_key, onnx_file_size, metadata
+            `SELECT id, version, onnx_file_key, onnx_file_size, metadata, has_predict, has_stream
              FROM versions
              WHERE package_id = $1 AND version = $2`,
             [pkg.id, versionParam],
@@ -120,6 +122,8 @@ export async function getManifest(req: Request, res: Response) {
         version: versionRow.version,
         description: pkg.description,
         metadata: versionRow.metadata,
+        has_predict: versionRow.has_predict,
+        has_stream: versionRow.has_stream,
         wrapper: wrapperResponse,
         model_files: modelFilesResponse,
     });

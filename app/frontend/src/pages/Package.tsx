@@ -13,6 +13,8 @@ type PackageVersion = {
     onnx_file_size: number;
     created_at: string;
     is_yanked: boolean;
+    has_predict: boolean;
+    has_stream: boolean;
 };
 
 type PackageDetails = {
@@ -177,6 +179,11 @@ export default function Package() {
             isActive = false;
         };
     }, [name, showToast]);
+
+    const latestVersion = useMemo(() => {
+        if (!pkg?.versions?.length) return null;
+        return pkg.versions[0];
+    }, [pkg]);
 
     if (loading && !pkg) {
         return (
@@ -345,33 +352,59 @@ export default function Package() {
                         <span style={{ color: "#89ddff" }}>;</span>
                         {"\n\n"}
 
-                        <span style={{ color: "#637777", fontStyle: "italic" }}>{"// Run inference with plain JS objects"}</span>
-                        {"\n"}
+                        {((!latestVersion?.has_predict && !latestVersion?.has_stream) || latestVersion?.has_predict) && (
+                            <>
+                                <span style={{ color: "#637777", fontStyle: "italic" }}>{"// Run inference with plain JS objects"}</span>
+                                {"\n"}
+                                <span style={{ color: "#c792ea", fontStyle: "italic" }}>const</span>
+                                <span style={{ color: "#d6deeb" }}> result </span>
+                                <span style={{ color: "#89ddff" }}>=</span>
+                                <span style={{ color: "#d6deeb" }}> </span>
+                                <span style={{ color: "#c792ea", fontStyle: "italic" }}>await</span>
+                                <span style={{ color: "#d6deeb" }}> model</span>
+                                <span style={{ color: "#89ddff" }}>.</span>
+                                <span style={{ color: "#82aaff" }}>predict</span>
+                                <span style={{ color: "#89ddff" }}>{"({"}</span>
+                                <span style={{ color: "#637777", fontStyle: "italic" }}>{" /* input data */ "}</span>
+                                <span style={{ color: "#89ddff" }}>{"})"}</span>
+                                <span style={{ color: "#89ddff" }}>;</span>
+                                {"\n"}
+                                <span style={{ color: "#d6deeb" }}>console</span>
+                                <span style={{ color: "#89ddff" }}>.</span>
+                                <span style={{ color: "#82aaff" }}>log</span>
+                                <span style={{ color: "#d6deeb" }}>(result)</span>
+                                <span style={{ color: "#89ddff" }}>;</span>
+                                {latestVersion?.has_stream ? "\n\n" : ""}
+                            </>
+                        )}
 
-                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>const</span>
-                        <span style={{ color: "#d6deeb" }}> result </span>
-                        <span style={{ color: "#89ddff" }}>=</span>
-                        <span style={{ color: "#d6deeb" }}> </span>
-                        <span style={{ color: "#c792ea", fontStyle: "italic" }}>await</span>
-                        <span style={{ color: "#d6deeb" }}> model</span>
-                        <span style={{ color: "#89ddff" }}>.</span>
-                        <span style={{ color: "#82aaff" }}>predict</span>
-                        <span style={{ color: "#89ddff" }}>{"({"}</span>
-                        {"\n"}
-
-                        <span style={{ color: "#d6deeb" }}>{"  "}</span>
-                        <span style={{ color: "#637777", fontStyle: "italic" }}>{"// ... your input data"}</span>
-                        {"\n"}
-
-                        <span style={{ color: "#89ddff" }}>{"})"}</span>
-                        <span style={{ color: "#89ddff" }}>;</span>
-                        {"\n\n"}
-
-                        <span style={{ color: "#d6deeb" }}>console</span>
-                        <span style={{ color: "#89ddff" }}>.</span>
-                        <span style={{ color: "#82aaff" }}>log</span>
-                        <span style={{ color: "#d6deeb" }}>(result)</span>
-                        <span style={{ color: "#89ddff" }}>;</span>
+                        {latestVersion?.has_stream && (
+                            <>
+                                <span style={{ color: "#637777", fontStyle: "italic" }}>{"// Or stream tokens/chunks in real-time"}</span>
+                                {"\n"}
+                                <span style={{ color: "#c792ea", fontStyle: "italic" }}>const</span>
+                                <span style={{ color: "#d6deeb" }}> stream </span>
+                                <span style={{ color: "#89ddff" }}>=</span>
+                                <span style={{ color: "#d6deeb" }}> model</span>
+                                <span style={{ color: "#89ddff" }}>.</span>
+                                <span style={{ color: "#82aaff" }}>stream</span>
+                                <span style={{ color: "#89ddff" }}>{"({"}</span>
+                                <span style={{ color: "#637777", fontStyle: "italic" }}>{" /* prompt/input */ "}</span>
+                                <span style={{ color: "#89ddff" }}>{"})"}</span>
+                                <span style={{ color: "#89ddff" }}>;</span>
+                                {"\n\n"}
+                                <span style={{ color: "#c792ea", fontStyle: "italic" }}>for await</span>
+                                <span style={{ color: "#d6deeb" }}> (</span>
+                                <span style={{ color: "#c792ea", fontStyle: "italic" }}>const</span>
+                                <span style={{ color: "#d6deeb" }}> chunk </span>
+                                <span style={{ color: "#c792ea", fontStyle: "italic" }}>of</span>
+                                <span style={{ color: "#d6deeb" }}> stream) {"{"}</span>
+                                {"\n"}
+                                <span style={{ color: "#d6deeb" }}>{"    "}process.stdout.write(chunk.token);</span>
+                                {"\n"}
+                                <span style={{ color: "#d6deeb" }}>{"}"}</span>
+                            </>
+                        )}
                     </code>
                 </pre>
             </div>

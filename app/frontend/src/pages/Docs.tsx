@@ -18,7 +18,7 @@ export default function Docs() {
 
     return (
         <div className="mx-auto flex w-full max-w-7xl flex-col md:flex-row py-8 px-4 sm:px-6 lg:px-8">
-            {/* Sidebar Navigation */}
+            {}
             <nav className="w-full md:w-64 flex-shrink-0 pr-8 mb-8 md:mb-0">
                 <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4">
                     Documentation
@@ -61,7 +61,7 @@ export default function Docs() {
                 </div>
             </nav>
 
-            {/* Main Content Area */}
+            {}
             <main className="flex-1 min-w-0 prose prose-invert prose-indigo max-w-none">
                 {activeSection === "intro" && <IntroSection />}
                 {activeSection === "publish" && <PublishSection />}

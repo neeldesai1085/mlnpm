@@ -149,6 +149,15 @@ async function hashStream(stream: Readable): Promise<string> {
     });
 }
 
+async function streamToString(stream: Readable): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const chunks: Buffer[] = [];
+        stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+        stream.on("error", reject);
+        stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
+    });
+}
+
 export async function publishVersion(req: Request, res: Response) {
     const { name } = req.params;
     const userId = req.user!.id;
@@ -241,7 +250,7 @@ export async function publishVersion(req: Request, res: Response) {
         nameSet.add(file.name);
     }
 
-    // Enforce exactly one wrapper file
+    
     const wrapperFiles = files.filter((f) => f.file_type === "wrapper");
     if (wrapperFiles.length === 0) {
         res.status(400).json({
@@ -316,7 +325,7 @@ export async function getVersion(req: Request, res: Response) {
 
     const result = await query(
         `SELECT v.id, v.version, v.onnx_file_key, v.onnx_file_size,
-                v.metadata, v.is_yanked, v.created_at
+                v.metadata, v.is_yanked, v.has_predict, v.has_stream, v.created_at
         FROM versions v JOIN packages p ON p.id = v.package_id
         WHERE p.name = $1 AND v.version = $2`,
         [name, version],
@@ -385,6 +394,8 @@ export async function getVersion(req: Request, res: Response) {
             version: ver.version,
             onnx_file_size: ver.onnx_file_size,
             metadata: ver.metadata,
+            has_predict: ver.has_predict,
+            has_stream: ver.has_stream,
             created_at: ver.created_at,
         },
         files: downloadFiles,
@@ -428,8 +439,9 @@ export async function verifyVersion(req: Request, res: Response) {
         file_name: string;
         file_key: string;
         file_hash: string | null;
+        file_type: string;
     }>(
-        `SELECT file_name, file_key, file_hash
+        `SELECT file_name, file_key, file_hash, file_type
         FROM version_files WHERE version_id = $1
         ORDER BY file_name ASC`,
         [verId],
@@ -473,9 +485,29 @@ export async function verifyVersion(req: Request, res: Response) {
         return;
     }
 
+    let hasPredict = false;
+    let hasStream = false;
+    const wrapperFile = filesResult.rows.find((f) => f.file_type === "wrapper");
+    if (wrapperFile) {
+        try {
+            const stream = await getObjectStream(wrapperFile.file_key);
+            const content = await streamToString(stream);
+            hasPredict = /\bpredict\s*[:(]/.test(content);
+            hasStream = /\bstream\s*[:(]/.test(content);
+        } catch (err) {
+            console.error("Failed to scan wrapper for capabilities:", err);
+        }
+    }
+
+    await query(
+        "UPDATE versions SET has_predict = $1, has_stream = $2 WHERE id = $3",
+        [hasPredict, hasStream, verId]
+    );
+
     res.json({
         message: "Version verified",
         verified_files: filesResult.rows.length,
+        capabilities: { hasPredict, hasStream }
     });
 }
 

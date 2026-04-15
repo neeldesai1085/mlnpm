@@ -3,11 +3,11 @@ import model from "breast-cancer-detection";
 async function runTest() {
     console.log("🚀 Initializing model...");
     
-    // 1. Initialize the model (downloads .onnx on first run)
+    
     await model.init();
     console.log("✅ Model ready!");
 
-    // 2. Prepare sample input (Malignant Sample)
+    
     const input = {
         mean_radius: 17.99, mean_texture: 10.38, mean_perimeter: 122.8,
         mean_area: 1001.0, mean_smoothness: 0.1184, mean_compactness: 0.2776,
@@ -24,7 +24,7 @@ async function runTest() {
     console.log("🧪 Running prediction...");
     
     try {
-        // 3. Run the prediction
+        
         const result = await model.predict(input);
         
         console.log("\n📊 Prediction Result:");

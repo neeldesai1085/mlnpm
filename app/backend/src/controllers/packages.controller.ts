@@ -84,7 +84,7 @@ export async function getPackage(req: Request, res: Response) {
     }
 
     const versionsResult = await query(
-        `SELECT id, version, onnx_file_size, metadata, is_yanked, created_at
+        `SELECT id, version, onnx_file_size, metadata, is_yanked, has_predict, has_stream, created_at
         FROM versions WHERE package_id = $1 ORDER BY created_at DESC`,
         [pkgResult.rows[0].id],
     );

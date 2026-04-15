@@ -70,7 +70,7 @@ export default function PublishReview({
 
     return (
         <div className="max-w-4xl w-full mx-auto px-6 py-10">
-            {/* Header */}
+            {}
             <div className="mb-8 flex items-center gap-4">
                 <button
                     type="button"
@@ -103,7 +103,7 @@ export default function PublishReview({
                 </div>
             </div>
 
-            {/* Package info card */}
+            {}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 mb-6">
                 <h2 className="text-lg font-semibold text-white mb-4">
                     Package Summary
@@ -142,7 +142,7 @@ export default function PublishReview({
                 </div>
             </div>
 
-            {/* Stats bar */}
+            {}
             <div className="flex items-center gap-4 mb-4">
                 <div className="flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-2.5">
                     <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">
@@ -172,7 +172,7 @@ export default function PublishReview({
                 ) : null}
             </div>
 
-            {/* File list */}
+            {}
             <div className="rounded-2xl border border-slate-800 bg-slate-900/60 overflow-hidden mb-8">
                 <div className="grid grid-cols-[1fr_auto_auto] items-center gap-4 border-b border-slate-800 bg-slate-950/50 px-6 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     <span>File name</span>
@@ -203,7 +203,7 @@ export default function PublishReview({
                 </div>
             </div>
 
-            {/* Publish button */}
+            {}
             {!isUploading ? (
                 <button
                     type="button"
@@ -255,12 +255,12 @@ export default function PublishReview({
                 </button>
             ) : null}
 
-            {/* Upload overlay */}
+            {}
             {isUploading ? (
                 <div className="fixed inset-0 z-40 cursor-not-allowed bg-slate-950/40 backdrop-blur-sm" />
             ) : null}
 
-            {/* Upload progress */}
+            {}
             {isUploading ? (
                 <div className="fixed bottom-6 left-1/2 z-50 w-[min(680px,calc(100%-2rem))] -translate-x-1/2 rounded-2xl border border-slate-800 bg-slate-950/90 p-4 shadow-xl backdrop-blur">
                     <div className="flex items-center justify-between gap-4">
@@ -292,7 +292,7 @@ export default function PublishReview({
                 </div>
             ) : null}
 
-            {/* Toast slot */}
+            {}
             {children}
         </div>
     );

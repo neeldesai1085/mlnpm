@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS versions (
     onnx_file_size BIGINT NOT NULL DEFAULT 0,
     metadata JSONB DEFAULT '{}',
     is_yanked BOOLEAN NOT NULL DEFAULT false,
+    has_predict BOOLEAN NOT NULL DEFAULT false,
+    has_stream BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CONSTRAINT uq_package_version UNIQUE (package_id, version)
 );

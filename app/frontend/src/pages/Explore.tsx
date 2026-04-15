@@ -128,7 +128,7 @@ export default function Explore() {
                                     {pkg.access_count.toLocaleString()} views
                                 </span>
                             </div>
-                            <p className="text-sm text-slate-400 mb-4">
+                            <p className="text-sm text-slate-400 mb-4 line-clamp-2 overflow-hidden h-10">
                                 {pkg.description ||
                                     "No description provided yet."}
                             </p>

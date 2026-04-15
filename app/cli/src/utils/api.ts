@@ -5,6 +5,8 @@ export interface ManifestResponse {
     version: string;
     description: string;
     metadata: Record<string, unknown>;
+    has_predict: boolean;
+    has_stream: boolean;
     wrapper: {
         file_name: string;
         download_url: string;
