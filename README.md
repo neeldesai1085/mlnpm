@@ -143,4 +143,4 @@ The MLNPM CLI (`@mlnpm/cli`) is a full **Lifecycle Management System** for machi
 
 ## 📜 License
 
-MLNPM was created by **Neel Desai** as a comprehensive solution for native Machine Learning in Node.js. Licensed under the **MIT License**.
+MLNPM was created by **Neel Desai** as a comprehensive solution for native Machine Learning in Node.js. Licensed under the **Apache 2.0 License**.
