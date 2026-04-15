@@ -462,16 +462,32 @@ function CliSection() {
             <div className="mt-12">
                 <code className="text-xl font-bold text-emerald-400 block mb-3">mlnpm restore</code>
                 <p className="mb-4 text-slate-200">
-                    Your absolutely critical continuous deployment and CI/CD operations standard. 
+                    The command that re-downloads all your MLNPM models on a fresh machine or inside a CI/CD deployment environment.
                 </p>
-                <p className="text-sm text-slate-300">
-                    When you push your website dynamically to massive platforms like Vercel, AWS Amplify, or Digital Ocean, those isolated cloud environments do NOT have your 15GB `.onnx` models contained in git. 
-                    Running <code>mlnpm restore</code> strictly forces MLNPM to recursively scan your <code>package.json</code> and re-acquire every single model actively utilized completely from scratch flawlessly onto the server ecosystem immediately prior to building!
+                <p className="text-sm text-slate-300 mb-4">
+                    When you deploy your application to Vercel, AWS Amplify, Render, Railway, or any cloud platform, 
+                    those environments clone your git repository and run <code>npm install</code> — but your <code>.onnx</code> model 
+                    files are not in git (they are too large and live in <code>~/.mlnpm/cache</code> on your machine). 
+                    <code>mlnpm restore</code> reads the <code>"mlnpm"</code> section of your <code>package.json</code>, 
+                    identifies every model your project depends on, and downloads them fresh into the deployment environment 
+                    before your build starts.
                 </p>
-                <div className="bg-emerald-950/30 p-3 mt-4 text-xs rounded border border-emerald-900/50">
-                    <strong>Best Practice:</strong> Always ensure <code>"postinstall": "mlnpm restore"</code> natively sits within your application `package.json` scripts! This guarantees automatic recovery completely globally!
+                <div className="bg-emerald-950/30 p-4 mt-4 text-sm rounded border border-emerald-900/50">
+                    <strong className="text-emerald-400 block mb-2">This is set up automatically — you do not need to do anything.</strong>
+                    <p className="text-slate-300">
+                        Every time you run <code>mlnpm install &lt;package&gt;</code>, the CLI automatically injects the following 
+                        into your <code>package.json</code> scripts without any manual steps:
+                    </p>
+                    <pre className="bg-black/40 mt-3 p-3 rounded text-xs text-emerald-300">{`"scripts": {
+    "postinstall": "mlnpm restore"
+}`}</pre>
+                    <p className="text-slate-400 mt-3 text-xs">
+                        If a <code>postinstall</code> script already exists in your project, MLNPM appends itself safely 
+                        with <code>&amp;&amp;</code> rather than overwriting your existing script. Your existing hooks are never removed.
+                    </p>
                 </div>
             </div>
+
 
             <div className="mt-12">
                 <code className="text-xl font-bold text-amber-400 block mb-3">mlnpm uninstall &lt;package-name&gt;</code>
