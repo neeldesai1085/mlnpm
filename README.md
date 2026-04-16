@@ -92,6 +92,7 @@ The MLNPM CLI (`@mlnpm/cli`) is a full **Lifecycle Management System** for machi
 ### 3. Client-Side Compilation Bridge
 - **Sucrase Engine**: Compiles model wrappers *in the browser* using the Sucrase library, ensuring sanitized JavaScript reaches the production backend.
 - **Context-Aware Docs**: Backend scans wrappers for `predict()` or `stream()` and customizes all CLI/Web documentation snippets automatically.
+- **Version Metadata**: Supports arbitrary JSON metadata (e.g., GPU requirements, citations) attached to each model version, visible during the final review and stored for downstream discovery.
 
 ---
 
