@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import CustomToast from "../components/CustomToast";
 import { useToastState } from "../hooks/useToastState";
-import { api } from "../utils/api";
+import { api, getToken } from "../utils/api";
 
 type PackageSummary = {
     id: string;
@@ -160,7 +160,7 @@ export default function Explore() {
                     </p>
                     {trimmedSearch.length === 0 && (
                         <Link
-                            to="/manage"
+                            to={getToken() ? "/manage" : "/login"}
                             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-xl transition-colors"
                         >
                             Publish First Model

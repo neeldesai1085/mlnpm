@@ -212,7 +212,7 @@ function PublishSection() {
             <p>The system to go live is intensely straightforward once your files prepare correctly:</p>
             <ol className="list-decimal pl-6 space-y-3 mt-4">
                 <li>Verify you are actively authenticated into your User profile.</li>
-                <li>Navigate precisely to the <Link to="/manage" className="text-indigo-400 hover:text-indigo-300 font-semibold underline">Publish a Model</Link> portal.</li>
+                <li>Navigate precisely to the <Link to={getToken() ? "/manage" : "/login"} className="text-indigo-400 hover:text-indigo-300 font-semibold underline">Publish a Model</Link> portal.</li>
                 <li><strong>Naming:</strong> Input a memorable, concise identifier (no spaces or special punctuation). This is exactly what millions of developers will type into terminal: <code>mlnpm install &lt;name&gt;</code>.</li>
                 <li><strong>Versioning:</strong> Safely declare your SemVer string starting at <code>1.0.0</code>.</li>
                 <li><strong>Documentation:</strong> Enter a vastly descriptive summary! Tell developers what the model accomplishes mathematically, provide structural examples, and define strict parameter constraints.</li>
