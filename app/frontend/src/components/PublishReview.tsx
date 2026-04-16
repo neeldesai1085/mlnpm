@@ -12,6 +12,7 @@ type PublishReviewProps = {
     description: string;
     isNewPackage: boolean;
     files: ReviewFile[];
+    metadata?: Record<string, any>;
     isSubmitting: boolean;
     isUploading: boolean;
     uploadProgress: number;
@@ -55,6 +56,7 @@ export default function PublishReview({
     description,
     isNewPackage,
     files,
+    metadata,
     isSubmitting,
     isUploading,
     uploadProgress,
@@ -141,6 +143,19 @@ export default function PublishReview({
                     ) : null}
                 </div>
             </div>
+
+            {metadata && Object.keys(metadata).length > 0 ? (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 mb-6">
+                    <h2 className="text-lg font-semibold text-white mb-4">
+                        Version Metadata
+                    </h2>
+                    <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
+                        <pre className="text-xs font-mono text-indigo-300 overflow-x-auto">
+                            {JSON.stringify(metadata, null, 2)}
+                        </pre>
+                    </div>
+                </div>
+            ) : null}
 
             {}
             <div className="flex items-center gap-4 mb-4">

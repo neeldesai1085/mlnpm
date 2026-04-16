@@ -218,6 +218,8 @@ export default function Upload() {
     const [version, setVersion] = useState("");
     const [description, setDescription] = useState("");
     const [documentation, setDocumentation] = useState("");
+    const [metadataStr, setMetadataStr] = useState("");
+    const [parsedMetadata, setParsedMetadata] = useState<Record<string, any>>({});
     const [showPreview, setShowPreview] = useState(false);
     const [accepted, setAccepted] = useState<File[]>([]);
     const [fileTypes, setFileTypes] = useState<Record<string, "model" | "wrapper">>({});
@@ -734,6 +736,7 @@ export default function Upload() {
                 body: JSON.stringify({
                     version: version.trim(),
                     files: fileList,
+                    metadata: parsedMetadata,
                 }),
             })) as { files?: { name: string; upload_url: string }[] };
 
@@ -920,6 +923,27 @@ export default function Upload() {
             return;
         }
 
+        if (metadataStr.trim()) {
+            try {
+                const parsed = JSON.parse(metadataStr);
+                if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+                    throw new Error("Metadata must be a JSON object");
+                }
+                setParsedMetadata(parsed);
+            } catch (err: any) {
+                showToast({
+                    title: "Invalid JSON",
+                    message: err.message.includes("Unexpected token") 
+                        ? "The metadata is not valid JSON." 
+                        : err.message,
+                    variant: "error",
+                });
+                return;
+            }
+        } else {
+            setParsedMetadata({});
+        }
+
         setStep(2);
     };
 
@@ -931,6 +955,7 @@ export default function Upload() {
                 description={description.trim()}
                 isNewPackage={isNewPackage}
                 files={reviewFiles}
+                metadata={parsedMetadata}
                 isSubmitting={isSubmitting}
                 isUploading={isUploading}
                 uploadProgress={uploadProgress}
@@ -1045,6 +1070,23 @@ export default function Upload() {
                                     className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 text-slate-200 placeholder:text-slate-600 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     required={isNewPackage}
                                 />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
+                                    Version Metadata (JSON - Optional)
+                                </label>
+                                <textarea
+                                    value={metadataStr}
+                                    onChange={(event) =>
+                                        setMetadataStr(event.target.value)
+                                    }
+                                    placeholder='{ "gpu_required": true, "author": "Neel" }'
+                                    rows={3}
+                                    className="w-full rounded-xl border border-slate-800 bg-slate-950/70 px-4 py-3 font-mono text-sm text-indigo-300 placeholder:text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                                <p className="mt-2 text-xs text-slate-500">
+                                    Extra technical details like GPU requirements or citations.
+                                </p>
                             </div>
                         </div>
                     </div>
